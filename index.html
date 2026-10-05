@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIT-HOOK QR — Literacy Hook & Interactive QR Teaser System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- NAVBAR HEADER -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2">
+        <div class="bg-indigo-600 text-white p-2 rounded-xl">
+          <i data-lucide="qr-code" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-lg text-slate-900 tracking-tight block leading-none">LIT-HOOK QR</span>
+          <span class="text-[10px] text-indigo-600 font-semibold tracking-wider uppercase">Library Teaser System</span>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
+        <a href="#beranda" class="hover:text-indigo-600 transition">Beranda</a>
+        <a href="#katalog" class="hover:text-indigo-600 transition">Jelajahi Buku</a>
+        <a href="admin.html" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition">Dashboard Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section id="beranda" class="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 text-white py-12 md:py-20 px-4 relative overflow-hidden">
+    <div class="max-w-4xl mx-auto text-center relative z-10">
+      <span class="inline-block bg-indigo-500/30 text-indigo-200 text-xs px-3.5 py-1.5 rounded-full font-bold uppercase tracking-wider mb-4 border border-indigo-400/30">
+        Inovasi Literasi Digital Perpustakaan
+      </span>
+      <h1 class="text-3xl md:text-5xl font-extrabold mb-4 leading-tight">
+        “Penasaran Akhir Ceritanya? Temukan Jawabannya di Rak Buku!”
+      </h1>
+      <p class="text-indigo-100 text-sm md:text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+        Pindai kode QR pada sampul buku fisik perpustakaan untuk mengintip cuplikan komik Bab 1–3 & trailer multimedia sebelum meminjamnya.
+      </p>
+      <div class="flex flex-wrap justify-center gap-3">
+        <a href="#katalog" class="bg-amber-400 text-slate-900 font-black px-6 py-3 rounded-xl shadow-lg hover:bg-amber-300 transition text-sm flex items-center gap-2">
+          <i data-lucide="book-open" class="w-4 h-4"></i> Jelajahi Katalog Buku
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATISTIK SEDERHANA -->
+  <section class="max-w-5xl mx-auto px-4 -mt-8 relative z-20">
+    <div class="grid grid-cols-3 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 md:p-6 text-center">
+      <div>
+        <p id="stat-books" class="text-2xl md:text-3xl font-black text-indigo-600">0</p>
+        <p class="text-xs text-slate-500 font-medium">Buku Terdaftar</p>
+      </div>
+      <div class="border-x border-slate-100">
+        <p id="stat-scans" class="text-2xl md:text-3xl font-black text-indigo-600">0</p>
+        <p class="text-xs text-slate-500 font-medium">Total Scan QR</p>
+      </div>
+      <div>
+        <p id="stat-reviews" class="text-2xl md:text-3xl font-black text-indigo-600">0</p>
+        <p class="text-xs text-slate-500 font-medium">Review Siswa</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KATALOG BUKU SECTION -->
+  <section id="katalog" class="max-w-6xl mx-auto px-4 py-12 flex-1">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-900">Katalog & Intip Teaser</h2>
+        <p class="text-xs text-slate-500">Cari buku favoritmu atau filter berdasarkan kategori</p>
+      </div>
+      <div class="flex gap-2">
+        <input type="text" id="search-input" placeholder="Cari judul/penulis..." class="px-4 py-2 border border-slate-200 rounded-xl text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+    </div>
+
+    <!-- Container Grid Buku -->
+    <div id="books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Diisi secara dinamis oleh app.js -->
+    </div>
+  </section>
+
+  <!-- MODAL TEASER / DETAIL BUKU -->
+  <div id="book-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden overflow-y-auto p-4 flex justify-center items-start pt-10">
+    <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden mb-10 border border-slate-100 relative">
+      <button onclick="closeModal()" class="absolute top-4 right-4 z-10 bg-slate-100 hover:bg-slate-200 p-2 rounded-full text-slate-600 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+      
+      <div id="modal-content" class="p-6 md:p-8">
+        <!-- Konten Detail & Teaser Buku Dimuat Dinamis -->
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+      <p class="text-sm font-bold text-slate-800">LIT-HOOK QR — Perpustakaan Sekolah</p>
+      <p class="text-xs text-slate-400 mt-1">Menghubungkan Buku Fisik dengan Pengalaman Digital Multimedia</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
