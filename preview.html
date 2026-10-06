@@ -533,6 +533,91 @@
       document.getElementById("error-state").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
     }
+    // FUNGSI CONVERTER LINK GOOGLE DRIVE KE DIRECT LINK GAMBAR
+    function formatDriveUrl(url) {
+      if (!url) return "";
+      let driveUrl = url.trim();
+
+      // Cek apakah link berasal dari Google Drive
+      if (driveUrl.includes("drive.google.com")) {
+        // Ambil File ID menggunakan Regular Expression
+        const match = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || driveUrl.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          const fileId = match[1];
+          // Format direct image yang kompatibel dengan tag <img>
+          return `https://lh3.googleusercontent.com/d/${fileId}`;
+        }
+      }
+      return driveUrl; // Jika bukan google drive, pakai link asli
+    }
+
+    async function loadBookData(id) {
+      try {
+        const { data: book, error } = await supabaseClient
+          .from("books")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+
+        document.getElementById("loading-state").classList.add("hidden");
+
+        if (error || !book) {
+          console.error("Gagal memuat data buku:", error);
+          showError();
+          return;
+        }
+
+        document.getElementById("book-content").classList.remove("hidden");
+
+        // Format link cover
+        document.getElementById("book-cover").src = formatDriveUrl(book.cover_url) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80";
+        document.getElementById("book-badge").textContent = book.category || "Fiksi";
+        document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
+        document.getElementById("book-author").textContent = `Oleh: ${book.author || "Anonim"}`;
+        document.getElementById("book-desc").textContent = book.description || "Belum ada ringkasan sinopsis untuk buku ini.";
+
+        const locationFull = `Rak ${book.shelf_location || '-'} (Kode DDC ${book.ddc_code || '-'})`;
+        document.getElementById("book-ddc").textContent = `DDC : ${book.ddc_code || '-'}`;
+        document.getElementById("book-shelf").textContent = `Rak ${book.shelf_location || '-'}`;
+        document.getElementById("book-shelf-full").textContent = locationFull;
+        document.getElementById("stopping-shelf").textContent = locationFull;
+
+        // Slide Komik (Sudah dikonversi otomatis lewat formatDriveUrl)
+        teaserSlides = [
+          { url: formatDriveUrl(book.chapter_1_url), caption: "Bab 1: Cuplikan bagian awal cerita." },
+          { url: formatDriveUrl(book.chapter_2_url), caption: "Bab 2: Konflik mulai memuncak." },
+          { url: formatDriveUrl(book.chapter_3_url), caption: "Bab 3: Bagian klimaks sebelum menggantung." }
+        ].filter(s => s.url && s.url.trim() !== "");
+
+        if (teaserSlides.length > 0) {
+          updateSlide();
+        } else {
+          document.getElementById("teaser-image").src = "https://placehold.co/800x600?text=Gambar+Teaser+Belum+Tersedia";
+          document.getElementById("teaser-caption").textContent = "Belum ada gambar cuplikan untuk buku ini.";
+        }
+
+        // Embed Video Trailer
+        const videoIframe = document.getElementById("video-iframe");
+        const videoEmpty = document.getElementById("video-empty");
+        if (book.video_url && book.video_url.trim() !== "") {
+          let embedUrl = book.video_url;
+          if (embedUrl.includes("watch?v=")) {
+            embedUrl = embedUrl.replace("watch?v=", "embed/");
+          }
+          videoIframe.src = embedUrl;
+        } else {
+          videoIframe.classList.add("hidden");
+          videoEmpty.classList.remove("hidden");
+        }
+
+        if (window.lucide) lucide.createIcons();
+      } catch (err) {
+        console.error("Terjadi kesalahan:", err);
+        showError();
+      }
+    }
+
+    
   </script>
 </body>
 </html>
