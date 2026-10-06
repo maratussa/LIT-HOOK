@@ -97,3 +97,16 @@ if (logoutBtn) {
     window.location.reload();
   });
 }
+
+// Ganti bagian akhir fungsi checkAdminRole di admin.js menjadi seperti ini:
+console.log("Verifikasi Berhasil! Membuka Dashboard Admin...");
+
+if (loginSection) {
+  loginSection.classList.add("hidden");
+  loginSection.style.display = "none"; // Memastikan form login hilang
+}
+
+if (adminDashboard) {
+  adminDashboard.classList.remove("hidden");
+  adminDashboard.style.display = "block"; // Memastikan dashboard admin tampil
+}
