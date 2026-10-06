@@ -1,25 +1,26 @@
-// 1. Konfigurasi Supabase Client
+// Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 2. Element DOM Utama
+let editingBookId = null;
+
+// Element DOM Utama
 const loginForm = document.getElementById("loginForm");
 const loginSection = document.getElementById("loginSection");
 const adminDashboard = document.getElementById("adminDashboard");
 const loginError = document.getElementById("loginError");
 
-// 3. Cek Sesi Saat Halaman Dimuat
+// Cek Sesi Saat Halaman Dimuat
 window.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    console.log("Sesi aktif ditemukan untuk User ID:", session.user.id);
     await checkAdminRole(session.user.id);
   }
 });
 
-// 4. Form Submit Handler (Login)
+// Form Submit Handler (Login)
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -44,7 +45,7 @@ if (loginForm) {
   });
 }
 
-// 5. Verifikasi Hak Akses Admin & Buka Dashboard
+// Verifikasi Hak Akses Admin & Buka Dashboard
 async function checkAdminRole(userId) {
   const { data, error } = await supabaseClient
     .from("admin_profiles")
@@ -57,7 +58,6 @@ async function checkAdminRole(userId) {
     return;
   }
 
-  // Tampilkan Dashboard
   const targetLogin = document.getElementById("loginSection");
   const targetDashboard = document.getElementById("adminDashboard");
 
@@ -71,25 +71,23 @@ async function checkAdminRole(userId) {
     targetDashboard.style.setProperty("display", "flex", "important");
   }
 
-  // Muat Data Katalog & Review
   loadBooks();
   loadReviews();
 }
 
-// 6. Fungsi Logout Global (Sesuai onclick di admin.html)
+// Fungsi Logout Global
 async function handleLogout() {
   await supabaseClient.auth.signOut();
   window.location.reload();
 }
 
-// Jaga-jaga jika tombol logout menggunakan ID
 document.addEventListener("click", async (e) => {
   if (e.target && (e.target.id === "logoutBtn" || e.target.closest("#logoutBtn"))) {
     await handleLogout();
   }
 });
 
-// 7. Navigasi Tab (Kelola Buku vs Review)
+// Navigasi Tab
 function switchTab(tabName) {
   const tabBooks = document.getElementById("tab-books");
   const tabReviews = document.getElementById("tab-reviews");
@@ -109,7 +107,7 @@ function switchTab(tabName) {
   }
 }
 
-// 8. Load Data Buku
+// Load Data Buku & Tampilkan Tombol Edit + QR Code
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -126,6 +124,8 @@ async function loadBooks() {
 
   tableBody.innerHTML = "";
   books.forEach((book) => {
+    const safeBookJson = JSON.stringify(book).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
     const tr = document.createElement("tr");
     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
     tr.innerHTML = `
@@ -148,8 +148,11 @@ async function loadBooks() {
       </td>
       <td class="p-4 text-center">
         <div class="flex items-center justify-center gap-2">
-          <button onclick="generateQr('${book.id}', '${book.title}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700" title="Cetak QR">
+          <button onclick="generateQr('${book.id}', '${book.title.replace(/'/g, "\\'")}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700" title="Cetak QR">
             <i data-lucide="qr-code" class="w-4 h-4"></i>
+          </button>
+          <button onclick='editBook(${safeBookJson})' class="p-2 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-600" title="Edit Buku">
+            <i data-lucide="pencil" class="w-4 h-4"></i>
           </button>
           <button onclick="deleteBook('${book.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600" title="Hapus">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -163,7 +166,7 @@ async function loadBooks() {
   if (window.lucide) lucide.createIcons();
 }
 
-// 9. Load Ulasan Siswa
+// Load Ulasan Siswa
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
   if (!tableBody) return;
@@ -201,20 +204,53 @@ async function loadReviews() {
   });
 }
 
-// 10. Kontrol Modal Form Buku
+// Buka & Tutup Modal Buku
 function openBookModal() {
+  editingBookId = null;
   const modal = document.getElementById("admin-book-modal");
+  const form = document.getElementById("book-form");
+  const modalTitle = document.getElementById("modal-title");
+
+  if (form) form.reset();
+  if (modalTitle) modalTitle.textContent = "Tambah Buku Baru";
   if (modal) modal.classList.remove("hidden");
 }
 
 function closeBookModal() {
+  editingBookId = null;
   const modal = document.getElementById("admin-book-modal");
   const form = document.getElementById("book-form");
   if (modal) modal.classList.add("hidden");
   if (form) form.reset();
 }
 
-// 11. Handler Tambah Buku
+// Buka Modal Mode Edit Data
+function editBook(book) {
+  editingBookId = book.id;
+
+  document.getElementById("form-title").value = book.title || "";
+  document.getElementById("form-author").value = book.author || "";
+  document.getElementById("form-ddc").value = book.ddc_code || "";
+  document.getElementById("form-shelf").value = book.shelf_location || "";
+  document.getElementById("form-category").value = book.category || "";
+  document.getElementById("form-cover").value = book.cover_url || "";
+  
+  if (document.getElementById("form-desc")) {
+    document.getElementById("form-desc").value = book.description || "";
+  }
+
+  document.getElementById("form-ch1").value = book.chapter_1_url || "";
+  document.getElementById("form-ch2").value = book.chapter_2_url || "";
+  document.getElementById("form-ch3").value = book.chapter_3_url || "";
+
+  const modalTitle = document.getElementById("modal-title");
+  if (modalTitle) modalTitle.textContent = "Edit Data Buku";
+
+  const modal = document.getElementById("admin-book-modal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+// Submit Form (Tambah / Edit)
 document.addEventListener("DOMContentLoaded", () => {
   const bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -234,17 +270,22 @@ document.addEventListener("DOMContentLoaded", () => {
         description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
-        chapter_3_url: document.getElementById("form-ch3").value || null
+        chapter_3_url: document.getElementById("form-ch3").value || null,
       };
 
-      const { error } = await supabaseClient.from("books").insert([bookData]);
+      let response;
+      if (editingBookId) {
+        response = await supabaseClient.from("books").update(bookData).eq("id", editingBookId);
+      } else {
+        response = await supabaseClient.from("books").insert([bookData]);
+      }
 
       if (submitBtn) submitBtn.disabled = false;
 
-      if (error) {
-        alert("Gagal menyimpan buku: " + error.message);
+      if (response.error) {
+        alert("Gagal menyimpan data: " + response.error.message);
       } else {
-        alert("Buku berhasil ditambahkan!");
+        alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
         closeBookModal();
         loadBooks();
       }
@@ -252,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// 12. Modal QR Code & Hapus Buku
+// Generate QR Code Berbentuk URL Web Lengkap
 function generateQr(bookId, bookTitle) {
   const qrModal = document.getElementById("qr-modal");
   const qrContainer = document.getElementById("qrcode");
@@ -263,12 +304,15 @@ function generateQr(bookId, bookTitle) {
   qrContainer.innerHTML = "";
   if (titleElem) titleElem.textContent = bookTitle;
 
-  const targetUrl = `${window.location.origin}/preview.html?id=${bookId}`;
+  // Dapatkan URL dasar aplikasi (bekerja baik di local maupun domain GitHub Pages)
+  const currentUrl = window.location.href;
+  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+  const targetUrl = `${baseUrl}/preview.html?id=${bookId}`;
 
   new QRCode(qrContainer, {
     text: targetUrl,
-    width: 160,
-    height: 160,
+    width: 180,
+    height: 180,
   });
 
   qrModal.classList.remove("hidden");
