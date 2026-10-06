@@ -73,7 +73,7 @@
         <i data-lucide="alert-circle" class="w-6 h-6"></i>
       </div>
       <h2 class="text-base font-bold text-slate-900 mb-1">Buku Tidak Ditemukan</h2>
-      <p class="text-xs text-slate-500 mb-6">Informasi buku tidak tersedia atau telah dihapus dari sistem.</p>
+      <p class="text-xs text-slate-500 mb-6">Informasi buku tidak tersedia atau parameter ID buku di URL tidak ditemukan.</p>
       <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition">
         Kembali ke Katalog
       </a>
@@ -123,4 +123,416 @@
                 </div>
               </div>
               <button onclick="pinjamBukuAlert()" class="w-full sm:w-auto px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-sm transition whitespace-nowrap flex items-center justify-center gap-1.5">
-                <i data-luc
+                <i data-lucide="book-open" class="w-4 h-4"></i> Pinjam Buku Ini
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: TAB TEASER DENGAN PREVIEW LANGSUNG -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        
+        <!-- Navigation Tab Header -->
+        <div class="grid grid-cols-3 border-b border-slate-100 bg-slate-50/50 text-center font-bold text-xs text-slate-500">
+          <button id="tab-btn-komik" onclick="switchTeaserTab('komik')" class="py-3.5 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center gap-2 font-black transition">
+            <i data-lucide="image" class="w-4 h-4"></i> Potongan Komik
+          </button>
+          <button id="tab-btn-video" onclick="switchTeaserTab('video')" class="py-3.5 px-2 hover:text-slate-900 flex items-center justify-center gap-2 transition">
+            <i data-lucide="play-circle" class="w-4 h-4"></i> Video Trailer
+          </button>
+          <button id="tab-btn-peta" onclick="switchTeaserTab('peta')" class="py-3.5 px-2 hover:text-slate-900 flex items-center justify-center gap-2 transition">
+            <i data-lucide="git-fork" class="w-4 h-4"></i> Peta Konsep
+          </button>
+        </div>
+
+        <!-- Inner Teaser Header -->
+        <div class="p-4 sm:p-6 pb-2 flex items-center justify-between border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i>
+            <h3 id="teaser-type-title" class="text-xs font-black text-slate-900 uppercase tracking-wider">Cuplikan Komik / Gambar Teaser</h3>
+          </div>
+          <span id="slide-indicator" class="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-extrabold rounded-full">
+            Halaman 1
+          </span>
+        </div>
+
+        <!-- AREA KONTEN (KOMIK / VIDEO / PETA) -->
+        <div class="p-4 sm:p-6">
+          
+          <!-- 1. WIDGET POTONGAN KOMIK (DEFAULT) -->
+          <div id="view-komik" class="relative bg-slate-950 rounded-2xl overflow-hidden min-h-[350px] flex items-center justify-center">
+            <img id="teaser-image" src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=80" alt="Cuplikan Teaser" class="w-full h-80 sm:h-96 object-contain bg-slate-900">
+            
+            <button onclick="openModalZoom()" class="absolute top-3 right-3 px-3 py-1.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i> Zoom Gambar
+            </button>
+
+            <button onclick="prevSlide()" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg">
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <button onclick="nextSlide()" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg">
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+
+            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-4 text-white">
+              <p id="teaser-caption" class="text-xs font-bold leading-relaxed">
+                Bab 1: Cuplikan halaman awal cerita.
+              </p>
+            </div>
+          </div>
+
+          <!-- 2. WIDGET VIDEO TRAILER -->
+          <div id="view-video" class="hidden bg-slate-950 rounded-2xl overflow-hidden min-h-[350px] flex items-center justify-center">
+            <iframe id="video-iframe" class="w-full h-80 sm:h-96 rounded-2xl" src="" title="Video Trailer Buku" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div id="video-empty" class="hidden text-center p-8 text-slate-400">
+              <i data-lucide="video-off" class="w-10 h-10 mx-auto mb-2 text-slate-600"></i>
+              <p class="text-xs font-bold">Video trailer belum diunggah untuk buku ini.</p>
+            </div>
+          </div>
+
+          <!-- 3. WIDGET PETA KONSEP -->
+          <div id="view-peta" class="hidden bg-slate-900 p-6 rounded-2xl min-h-[350px] flex flex-col items-center justify-center text-center text-white space-y-4">
+            <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center">
+              <i data-lucide="git-fork" class="w-6 h-6"></i>
+            </div>
+            <h4 class="text-sm font-bold">Peta Alur & Karakter Utama</h4>
+            <p id="peta-desc" class="text-xs text-slate-400 max-w-md leading-relaxed">
+              Peta konsep menyajikan garis besar hubungan antar karakter serta konflik utama buku untuk mempermudah pemahaman cerita sebelum membaca.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- TEASER STOPPING POINT BANNER -->
+        <div class="bg-gradient-to-r from-rose-950 via-purple-950 to-slate-950 text-white p-8 text-center relative overflow-hidden">
+          <div class="relative z-10 space-y-3">
+            <div class="w-10 h-10 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-2xl flex items-center justify-center mx-auto">
+              <i data-lucide="lock" class="w-5 h-5"></i>
+            </div>
+            <span class="inline-block px-3 py-1 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md">
+              Teaser Stopping Point
+            </span>
+            <h2 class="text-xl sm:text-2xl font-black text-rose-100 tracking-tight">
+              "Sesuatu Yang Mengejutkan Terjadi!"
+            </h2>
+            <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">sfx</p>
+
+            <div class="mt-6 max-w-lg mx-auto bg-slate-900/90 border border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+              <div>
+                <p class="text-[10px] font-extrabold uppercase text-purple-400 tracking-wider">Temukan Kelanjutannya Di:</p>
+                <p id="stopping-shelf" class="text-xs font-black text-white">Rak -- (Kode DDC --)</p>
+              </div>
+              <span class="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i> Status: Tersedia di Rak
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CARD 3: STUDENT REVIEW WALL -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
+              <i data-lucide="message-square" class="w-5 h-5 text-indigo-600"></i> Student Review Wall
+            </h2>
+            <p class="text-[11px] text-slate-500 mt-0.5">Ulasan murni dari sesama pembaca perpustakaan</p>
+          </div>
+          <button onclick="openReviewModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition flex items-center gap-1.5">
+            <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i> Tulis Ulasan
+          </button>
+        </div>
+
+        <div id="reviews-container" class="space-y-3 pt-2">
+          <p class="text-xs text-slate-400 italic">Belum ada ulasan untuk buku ini.</p>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL ZOOM GAMBAR -->
+  <div id="zoom-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center z-50 p-4">
+    <button onclick="closeModalZoom()" class="absolute top-4 right-4 text-white bg-slate-800 p-2 rounded-full hover:bg-slate-700">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+    <img id="zoomed-img" src="" class="max-w-full max-h-[90vh] object-contain rounded-xl">
+  </div>
+
+  <!-- MODAL TULIS ULASAN -->
+  <div id="review-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-sm font-black text-slate-900">Tulis Ulasan Siswa</h3>
+        <button onclick="closeReviewModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="review-form" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nama / Kelas *</label>
+          <input type="text" id="rev-student" required placeholder="misal: Budi (Kelas XI IPA 2)" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Rating *</label>
+          <select id="rev-rating" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none">
+            <option value="5">★★★★★ (Sangat Bagus)</option>
+            <option value="4">★★★★☆ (Bagus)</option>
+            <option value="3">★★★☆☆ (Cukup)</option>
+            <option value="2">★★☆☆☆ (Kurang)</option>
+            <option value="1">★☆☆☆☆ (Sangat Kurang)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Ulasan Anda *</label>
+          <textarea id="rev-comment" required rows="3" placeholder="Tuliskan kesan atau bagian paling seru..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none resize-none"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeReviewModal()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20">Kirim Ulasan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 font-medium">
+    <p>&copy; 2026 LIT-HOOK QR Perpustakaan Digital. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentBookId = null;
+    let teaserSlides = [];
+    let currentSlideIdx = 0;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (window.lucide) lucide.createIcons();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      currentBookId = urlParams.get("id");
+
+      // Jika URL dibuka tanpa parameter ?id=
+      if (!currentBookId) {
+        console.warn("URL dibuka tanpa parameter ?id=");
+        showError();
+        return;
+      }
+
+      await loadBookData(currentBookId);
+      await loadReviews(currentBookId);
+    });
+
+    async function loadBookData(id) {
+      try {
+        const { data: book, error } = await supabaseClient
+          .from("books")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
+
+        // Pastikan spinner loading disembunyikan
+        document.getElementById("loading-state").classList.add("hidden");
+
+        if (error || !book) {
+          console.error("Gagal memuat data buku:", error);
+          showError();
+          return;
+        }
+
+        document.getElementById("book-content").classList.remove("hidden");
+
+        document.getElementById("book-cover").src = book.cover_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80";
+        document.getElementById("book-badge").textContent = book.category || "Fiksi";
+        document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
+        document.getElementById("book-author").textContent = `Oleh: ${book.author || "Anonim"}`;
+        document.getElementById("book-desc").textContent = book.description || "Belum ada ringkasan sinopsis untuk buku ini.";
+
+        const locationFull = `Rak ${book.shelf_location || '-'} (Kode DDC ${book.ddc_code || '-'})`;
+        document.getElementById("book-ddc").textContent = `DDC : ${book.ddc_code || '-'}`;
+        document.getElementById("book-shelf").textContent = `Rak ${book.shelf_location || '-'}`;
+        document.getElementById("book-shelf-full").textContent = locationFull;
+        document.getElementById("stopping-shelf").textContent = locationFull;
+
+        // Slide Komik
+        teaserSlides = [
+          { url: book.chapter_1_url, caption: "Bab 1: Masa muda Bung Karno dan perdebatan pemuda di Rengasdengklok." },
+          { url: book.chapter_2_url, caption: "Bab 2: Detik-detik perumusan naskah proklamasi." },
+          { url: book.chapter_3_url, caption: "Bab 3: Pembacaan teks proklamasi kemerdekaan RI." }
+        ].filter(s => s.url && s.url.trim() !== "");
+
+        if (teaserSlides.length > 0) {
+          updateSlide();
+        }
+
+        // Embed Video Trailer
+        const videoIframe = document.getElementById("video-iframe");
+        const videoEmpty = document.getElementById("video-empty");
+        if (book.video_url && book.video_url.trim() !== "") {
+          let embedUrl = book.video_url;
+          if (embedUrl.includes("watch?v=")) {
+            embedUrl = embedUrl.replace("watch?v=", "embed/");
+          }
+          videoIframe.src = embedUrl;
+        } else {
+          videoIframe.classList.add("hidden");
+          videoEmpty.classList.remove("hidden");
+        }
+
+        if (window.lucide) lucide.createIcons();
+      } catch (err) {
+        console.error("Terjadi kesalahan:", err);
+        showError();
+      }
+    }
+
+    function switchTeaserTab(type) {
+      const btnKomik = document.getElementById("tab-btn-komik");
+      const btnVideo = document.getElementById("tab-btn-video");
+      const btnPeta = document.getElementById("tab-btn-peta");
+
+      const viewKomik = document.getElementById("view-komik");
+      const viewVideo = document.getElementById("view-video");
+      const viewPeta = document.getElementById("view-peta");
+      const typeTitle = document.getElementById("teaser-type-title");
+
+      [btnKomik, btnVideo, btnPeta].forEach(b => {
+        b.className = "py-3.5 px-2 hover:text-slate-900 flex items-center justify-center gap-2 transition font-bold text-slate-500 border-b-2 border-transparent";
+      });
+
+      viewKomik.classList.add("hidden");
+      viewVideo.classList.add("hidden");
+      viewPeta.classList.add("hidden");
+
+      if (type === "komik") {
+        btnKomik.className = "py-3.5 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center gap-2 font-black transition";
+        viewKomik.classList.remove("hidden");
+        typeTitle.textContent = "Cuplikan Komik / Gambar Teaser";
+      } else if (type === "video") {
+        btnVideo.className = "py-3.5 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center gap-2 font-black transition";
+        viewVideo.classList.remove("hidden");
+        typeTitle.textContent = "Video Trailer Buku";
+      } else if (type === "peta") {
+        btnPeta.className = "py-3.5 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center gap-2 font-black transition";
+        viewPeta.classList.remove("hidden");
+        typeTitle.textContent = "Peta Konsep Cerita";
+      }
+    }
+
+    function updateSlide() {
+      if (teaserSlides.length === 0) return;
+      const slide = teaserSlides[currentSlideIdx];
+      document.getElementById("teaser-image").src = slide.url;
+      document.getElementById("teaser-caption").textContent = slide.caption;
+      document.getElementById("slide-indicator").textContent = `Halaman ${currentSlideIdx + 1} dari ${teaserSlides.length}`;
+    }
+
+    function nextSlide() {
+      if (teaserSlides.length === 0) return;
+      currentSlideIdx = (currentSlideIdx + 1) % teaserSlides.length;
+      updateSlide();
+    }
+
+    function prevSlide() {
+      if (teaserSlides.length === 0) return;
+      currentSlideIdx = (currentSlideIdx - 1 + teaserSlides.length) % teaserSlides.length;
+      updateSlide();
+    }
+
+    function openModalZoom() {
+      const currentSrc = document.getElementById("teaser-image").src;
+      document.getElementById("zoomed-img").src = currentSrc;
+      document.getElementById("zoom-modal").classList.remove("hidden");
+    }
+
+    function closeModalZoom() {
+      document.getElementById("zoom-modal").classList.add("hidden");
+    }
+
+    async function loadReviews(bookId) {
+      try {
+        const { data: reviews, error } = await supabaseClient
+          .from("reviews")
+          .select("*")
+          .eq("book_id", bookId)
+          .order("created_at", { ascending: false });
+
+        const container = document.getElementById("reviews-container");
+        if (!error && reviews && reviews.length > 0) {
+          container.innerHTML = "";
+          reviews.forEach(rev => {
+            const stars = "★".repeat(rev.rating || 5) + "☆".repeat(5 - (rev.rating || 5));
+            const div = document.createElement("div");
+            div.className = "p-4 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+            div.innerHTML = `
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-slate-900">${rev.student_name || 'Siswa'}</span>
+                  <div class="flex text-amber-400 text-xs">${stars}</div>
+                </div>
+                <p class="text-xs text-slate-600">${rev.comment || ''}</p>
+              </div>
+              <span class="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-full w-fit">
+                ✓ Pembaca Terverifikasi
+              </span>
+            `;
+            container.appendChild(div);
+          });
+        }
+      } catch (e) {
+        console.error("Error reviews:", e);
+      }
+    }
+
+    function pinjamBukuAlert() {
+      alert("Silakan menuju ke petugas meja sirkulasi perpustakaan untuk meminjam buku fisik ini!");
+    }
+
+    function openReviewModal() {
+      document.getElementById("review-modal").classList.remove("hidden");
+    }
+
+    function closeReviewModal() {
+      document.getElementById("review-modal").classList.add("hidden");
+    }
+
+    document.getElementById("review-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const studentName = document.getElementById("rev-student").value;
+      const rating = parseInt(document.getElementById("rev-rating").value);
+      const comment = document.getElementById("rev-comment").value;
+
+      const { error } = await supabaseClient.from("reviews").insert([{
+        book_id: currentBookId,
+        student_name: studentName,
+        rating: rating,
+        comment: comment,
+        status: 'approved'
+      }]);
+
+      if (error) {
+        alert("Gagal mengirim ulasan: " + error.message);
+      } else {
+        alert("Ulasan berhasil dikirim!");
+        closeReviewModal();
+        loadReviews(currentBookId);
+      }
+    });
+
+    function showError() {
+      document.getElementById("loading-state").classList.add("hidden");
+      document.getElementById("error-state").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
