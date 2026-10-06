@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teaser Buku — LIT-HOOK QR</title>
+  <title>Detail Teaser Buku — LIT-HOOK QR</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client -->
@@ -11,173 +11,201 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between antialiased">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between">
 
-  <!-- NAVBAR -->
-  <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
-    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-      <a href="index.html" class="flex items-center gap-2 text-indigo-400 font-black text-base tracking-tight">
-        <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
-          <i data-lucide="qr-code" class="w-4 h-4"></i>
-        </div>
-        <span>LIT–HOOK</span>
-      </a>
-      <a href="index.html" class="text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1">
-        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Katalog Utama
-      </a>
+  <!-- NAVBAR UTAMA -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <!-- Left Logo & Badge -->
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="flex items-center gap-2 font-black text-lg text-indigo-600 tracking-tight">
+          <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md shadow-indigo-600/20">
+            <i data-lucide="qr-code" class="w-5 h-5"></i>
+          </div>
+          <span class="text-slate-900">LIT-HOOK <span class="text-indigo-600">QR</span></span>
+        </a>
+        <span class="hidden sm:inline-block px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 text-[11px] font-bold rounded-full">
+          Generasi Kadar Literasi
+        </span>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
+        <a href="index.html" class="flex items-center gap-1.5 hover:text-indigo-600 transition">
+          <i data-lucide="home" class="w-4 h-4 text-indigo-500"></i> Beranda
+        </a>
+        <a href="index.html#scan" class="flex items-center gap-1.5 hover:text-indigo-600 transition">
+          <i data-lucide="qr-code" class="w-4 h-4 text-indigo-500"></i> Scan QR Buku
+        </a>
+        <a href="index.html#katalog" class="flex items-center gap-1.5 hover:text-indigo-600 transition">
+          <i data-lucide="book-open" class="w-4 h-4 text-indigo-500"></i> Katalog Teaser
+        </a>
+      </nav>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <span class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Admin Mode
+        </span>
+        <a href="admin.html" class="bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-slate-800 transition shadow-sm">
+          <i data-lucide="user-check" class="w-4 h-4"></i> Dashboard Admin
+        </a>
+      </div>
     </div>
   </header>
 
-  <!-- KONTEN UTAMA TEASER -->
-  <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-grow">
-    
+  <!-- KONTEN UTAMA -->
+  <main class="max-w-5xl mx-auto px-4 py-6 w-full flex-grow space-y-6">
+
+    <!-- Tombol Kembali -->
+    <div>
+      <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-bold text-slate-700 shadow-sm transition">
+        <i data-lucide="arrow-left" class="w-4 h-4 text-indigo-600"></i> Kembali ke Katalog
+      </a>
+    </div>
+
     <!-- LOADING STATE -->
-    <div id="loading-state" class="text-center py-20 space-y-3">
-      <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="text-xs text-slate-400 font-medium">Memuat data teaser buku...</p>
+    <div id="loading-state" class="text-center py-20 space-y-3 bg-white rounded-3xl border border-slate-200/80 shadow-sm">
+      <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="text-xs text-slate-500 font-medium">Memuat rincian teaser buku...</p>
     </div>
 
     <!-- ERROR STATE -->
-    <div id="error-state" class="hidden text-center py-16 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-      <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-3">
+    <div id="error-state" class="hidden text-center py-16 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+      <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
         <i data-lucide="alert-circle" class="w-6 h-6"></i>
       </div>
-      <h2 class="text-lg font-bold text-white mb-1">Buku Tidak Ditemukan</h2>
-      <p class="text-xs text-slate-400 mb-6">Data sampel atau informasi buku tidak tersedia di sistem.</p>
+      <h2 class="text-base font-bold text-slate-900 mb-1">Buku Tidak Ditemukan</h2>
+      <p class="text-xs text-slate-500 mb-6">Informasi buku tidak tersedia atau telah dihapus dari sistem.</p>
       <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition">
         Kembali ke Katalog
       </a>
     </div>
 
-    <!-- DETAIL BUKU & TEASER BAB -->
+    <!-- DETAIL KONTEN BUKU -->
     <div id="book-content" class="hidden space-y-6">
-      
-      <!-- HERO BUKU -->
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 md:p-6 backdrop-blur-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-        <img id="book-cover" src="" alt="Cover Buku" class="w-32 h-48 object-cover rounded-xl shadow-2xl bg-slate-700 shrink-0 border border-slate-600/50">
-        
-        <div class="space-y-3 text-center sm:text-left flex-1">
-          <div>
-            <span id="book-category" class="inline-block px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-extrabold uppercase tracking-wider rounded-lg mb-2"></span>
-            <h1 id="book-title" class="text-xl sm:text-2xl font-black text-white leading-tight"></h1>
-            <p id="book-author" class="text-xs text-slate-400 font-medium mt-1"></p>
+
+      <!-- CARD 1: INFORMASI UTAMA BUKU -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm relative overflow-hidden">
+        <div class="flex flex-col md:flex-row gap-6 items-start">
+          
+          <!-- Cover Buku -->
+          <div class="relative shrink-0 mx-auto md:mx-0">
+            <span id="book-badge" class="absolute top-2 left-2 z-10 px-2.5 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase rounded-lg shadow-md">Fiksi</span>
+            <img id="book-cover" src="" alt="Cover Buku" class="w-40 h-56 object-cover rounded-2xl shadow-lg border border-slate-100">
           </div>
 
-          <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1 text-xs">
-            <span id="book-ddc" class="px-2.5 py-1 bg-slate-700/60 border border-slate-600/60 text-slate-300 font-semibold rounded-lg flex items-center gap-1">
-              <i data-lucide="bookmark" class="w-3.5 h-3.5 text-indigo-400"></i> DDC: -
-            </span>
-            <span id="book-shelf" class="px-2.5 py-1 bg-slate-700/60 border border-slate-600/60 text-slate-300 font-semibold rounded-lg flex items-center gap-1">
-              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i> Rak: -
-            </span>
-          </div>
+          <!-- Rincian Buku -->
+          <div class="flex-1 space-y-3 text-left">
+            <!-- DDC & Rak Badge -->
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-200 text-purple-700 rounded-lg text-xs font-bold">
+                <i data-lucide="bookmark" class="w-3.5 h-3.5"></i> <span id="book-ddc">DDC : -</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-bold">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> <span id="book-shelf">Rak -</span>
+              </span>
+            </div>
 
-          <div id="book-desc" class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-700/50"></div>
+            <!-- Judul & Penulis -->
+            <div>
+              <h1 id="book-title" class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">--</h1>
+              <p id="book-author" class="text-xs font-bold text-slate-500 mt-1">Oleh: --</p>
+            </div>
+
+            <!-- Sinopsis -->
+            <p id="book-desc" class="text-xs text-slate-600 leading-relaxed font-normal pt-1">
+              --
+            </p>
+
+            <!-- Card Lokasi Rak Hitam -->
+            <div class="mt-4 bg-slate-900 text-white p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-400 text-slate-900 rounded-xl flex items-center justify-center font-bold shrink-0">
+                  <i data-lucide="bookmark" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi Buku Fisik Saat Ini</p>
+                  <p id="book-shelf-full" class="text-xs font-extrabold text-amber-300">Rak -- (Kode DDC --)</p>
+                </div>
+              </div>
+              <button onclick="pinjamBukuAlert()" class="w-full sm:w-auto px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-sm transition whitespace-nowrap flex items-center justify-center gap-1.5">
+                <i data-lucide="book-open" class="w-4 h-4"></i> Pinjam Buku Ini
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- DAFTAR BAB TEASER -->
-      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 md:p-6 space-y-4">
-        <div class="flex items-center gap-2">
-          <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
-          <h2 class="text-base font-bold text-white">Sampel Bab / Teaser</h2>
+      <!-- CARD 2: TAB TEASER & SLIDER PRATINJAU -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <!-- Navigation Tab Header -->
+        <div class="grid grid-cols-3 border-b border-slate-100 bg-slate-50/50 text-center font-bold text-xs text-slate-500">
+          <button class="py-3.5 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center gap-2 font-black">
+            <i data-lucide="image" class="w-4 h-4"></i> Potongan Komik
+          </button>
+          <button class="py-3.5 px-2 hover:text-slate-900 flex items-center justify-center gap-2 transition">
+            <i data-lucide="play-circle" class="w-4 h-4"></i> Video Trailer
+          </button>
+          <button class="py-3.5 px-2 hover:text-slate-900 flex items-center justify-center gap-2 transition">
+            <i data-lucide="git-fork" class="w-4 h-4"></i> Peta Konsep / Misteri
+          </button>
         </div>
-        <p class="text-xs text-slate-400">Klik tombol di bawah untuk membaca pratinjau bab yang tersedia:</p>
 
-        <div id="chapters-list" class="space-y-2.5 pt-1">
-          <!-- Tombol bab akan dimuat dinamis -->
+        <!-- Inner Teaser Header -->
+        <div class="p-4 sm:p-6 pb-2 flex items-center justify-between border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <i data-lucide="book-open" class="w-4 h-4 text-indigo-600"></i>
+            <h3 class="text-xs font-black text-slate-900 uppercase tracking-wider">Cuplikan Bab 1 – Bab 3</h3>
+          </div>
+          <span class="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-extrabold rounded-full">
+            Halaman 1 dari 3
+          </span>
         </div>
-      </div>
 
-    </div>
+        <!-- Slider Teaser / Gambar Cuplikan -->
+        <div class="p-4 sm:p-6">
+          <div class="relative bg-slate-950 rounded-2xl overflow-hidden group min-h-[320px] flex items-center justify-center">
+            <img id="teaser-image" src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=80" alt="Cuplikan Teaser" class="w-full h-80 object-cover opacity-80">
+            
+            <!-- Tombol Zoom Gambar -->
+            <button class="absolute top-3 right-3 px-3 py-1.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i> Zoom Gambar
+            </button>
 
-  </main>
+            <!-- Navigasi Slider Panah -->
+            <button onclick="prevSlide()" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg">
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <button onclick="nextSlide()" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg">
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
 
-  <!-- FOOTER -->
-  <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
-    <p>&copy; 2026 Perpustakaan Digital LIT-HOOK QR</p>
-  </footer>
+            <!-- Caption Gambar Slider -->
+            <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent p-4 text-white">
+              <p id="teaser-caption" class="text-xs font-bold leading-relaxed">
+                Bab 1: Masa muda Bung Karno dan perdebatan pemuda di Rengasdengklok.
+              </p>
+            </div>
+          </div>
+        </div>
 
-  <script>
-    // Konfigurasi Supabase Client
-    const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      if (window.lucide) lucide.createIcons();
-
-      // Ambil ID dari Query Parameter URL (?id=...)
-      const urlParams = new URLSearchParams(window.location.search);
-      const bookId = urlParams.get("id");
-
-      if (!bookId) {
-        showError();
-        return;
-      }
-
-      // Ambil data buku dari Supabase
-      const { data: book, error } = await supabaseClient
-        .from("books")
-        .select("*")
-        .eq("id", bookId)
-        .single();
-
-      document.getElementById("loading-state").classList.add("hidden");
-
-      if (error || !book) {
-        showError();
-        return;
-      }
-
-      // Tampilkan konten buku
-      document.getElementById("book-content").classList.remove("hidden");
-
-      document.getElementById("book-cover").src = book.cover_url || "https://via.placeholder.com/150x220?text=No+Cover";
-      document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
-      document.getElementById("book-author").textContent = book.author ? `Penulis: ${book.author}` : "Penulis: -";
-      document.getElementById("book-category").textContent = book.category || "Umum";
-      document.getElementById("book-ddc").innerHTML = `<i data-lucide="bookmark" class="w-3.5 h-3.5 text-indigo-400"></i> DDC: ${book.ddc_code || '-'}`;
-      document.getElementById("book-shelf").innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i> Rak: ${book.shelf_location || '-'}`;
-      document.getElementById("book-desc").textContent = book.description || "Belum ada ringkasan deskripsi untuk buku ini.";
-
-      // Render daftar bab
-      const chaptersContainer = document.getElementById("chapters-list");
-      chaptersContainer.innerHTML = "";
-
-      const chapters = [
-        { label: "Bab 1 — Sampel Teaser", url: book.chapter_1_url },
-        { label: "Bab 2 — Sampel Teaser", url: book.chapter_2_url },
-        { label: "Bab 3 — Sampel Teaser", url: book.chapter_3_url }
-      ].filter(item => item.url && item.url.trim() !== "");
-
-      if (chapters.length === 0) {
-        chaptersContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Belum ada tautan bab yang diunggah untuk buku ini.</p>`;
-      } else {
-        chapters.forEach((ch, idx) => {
-          const a = document.createElement("a");
-          a.href = ch.url;
-          a.target = "_blank";
-          a.className = "flex items-center justify-between px-4 py-3 bg-slate-700/40 hover:bg-indigo-600/20 border border-slate-600/50 hover:border-indigo-500/50 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition group";
-          a.innerHTML = `
-            <span class="flex items-center gap-2">
-              <span class="w-5 h-5 rounded-md bg-indigo-500/20 text-indigo-400 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
-              ${ch.label}
+        <!-- TEASER STOPPING POINT BANNER -->
+        <div class="bg-gradient-to-r from-rose-950 via-purple-950 to-slate-950 text-white p-8 text-center relative overflow-hidden">
+          <div class="relative z-10 space-y-3">
+            <div class="w-10 h-10 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-2xl flex items-center justify-center mx-auto">
+              <i data-lucide="lock" class="w-5 h-5"></i>
+            </div>
+            <span class="inline-block px-3 py-1 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-md">
+              Teaser Stopping Point
             </span>
-            <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition"></i>
-          `;
-          chaptersContainer.appendChild(a);
-        });
-      }
+            <h2 class="text-xl sm:text-2xl font-black text-rose-100 tracking-tight">
+              "Sesuatu Yang Mengejutkan Terjadi!"
+            </h2>
+            <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">sfx</p>
 
-      if (window.lucide) lucide.createIcons();
-    });
-
-    function showError() {
-      document.getElementById("loading-state").classList.add("hidden");
-      document.getElementById("error-state").classList.remove("hidden");
-      if (window.lucide) lucide.createIcons();
-    }
-  </script>
-</body>
-</html>
+            <!-- Box Cari Kelanjutan Buku -->
+            <div class="mt-6 max-w-lg mx-auto bg-slate-900/90 border border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+              <div>
+                <p class="text-[10px] font-extrabold uppercase text-purple-400 tracking-wider">Temukan Kelanjutannya Di:</p>
+                <p id="stopping-shelf" class="text-xs font-black text-white">Rak -- (Kode DDC --
