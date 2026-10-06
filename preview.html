@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teaser Buku — LIT-HOOK QR</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- NAVBAR -->
+  <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
+    <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-2 text-indigo-400 font-black text-base tracking-tight">
+        <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+          <i data-lucide="qr-code" class="w-4 h-4"></i>
+        </div>
+        <span>LIT–HOOK</span>
+      </a>
+      <a href="index.html" class="text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1">
+        <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Katalog Utama
+      </a>
+    </div>
+  </header>
+
+  <!-- KONTEN UTAMA TEASER -->
+  <main class="max-w-3xl mx-auto px-4 py-8 w-full flex-grow">
+    
+    <!-- LOADING STATE -->
+    <div id="loading-state" class="text-center py-20 space-y-3">
+      <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="text-xs text-slate-400 font-medium">Memuat data teaser buku...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="error-state" class="hidden text-center py-16 bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+      <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+      </div>
+      <h2 class="text-lg font-bold text-white mb-1">Buku Tidak Ditemukan</h2>
+      <p class="text-xs text-slate-400 mb-6">Data sampel atau informasi buku tidak tersedia di sistem.</p>
+      <a href="index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition">
+        Kembali ke Katalog
+      </a>
+    </div>
+
+    <!-- DETAIL BUKU & TEASER BAB -->
+    <div id="book-content" class="hidden space-y-6">
+      
+      <!-- HERO BUKU -->
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 md:p-6 backdrop-blur-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+        <img id="book-cover" src="" alt="Cover Buku" class="w-32 h-48 object-cover rounded-xl shadow-2xl bg-slate-700 shrink-0 border border-slate-600/50">
+        
+        <div class="space-y-3 text-center sm:text-left flex-1">
+          <div>
+            <span id="book-category" class="inline-block px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-extrabold uppercase tracking-wider rounded-lg mb-2"></span>
+            <h1 id="book-title" class="text-xl sm:text-2xl font-black text-white leading-tight"></h1>
+            <p id="book-author" class="text-xs text-slate-400 font-medium mt-1"></p>
+          </div>
+
+          <div class="flex flex-wrap gap-2 justify-center sm:justify-start pt-1 text-xs">
+            <span id="book-ddc" class="px-2.5 py-1 bg-slate-700/60 border border-slate-600/60 text-slate-300 font-semibold rounded-lg flex items-center gap-1">
+              <i data-lucide="bookmark" class="w-3.5 h-3.5 text-indigo-400"></i> DDC: -
+            </span>
+            <span id="book-shelf" class="px-2.5 py-1 bg-slate-700/60 border border-slate-600/60 text-slate-300 font-semibold rounded-lg flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i> Rak: -
+            </span>
+          </div>
+
+          <div id="book-desc" class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-700/50"></div>
+        </div>
+      </div>
+
+      <!-- DAFTAR BAB TEASER -->
+      <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5 md:p-6 space-y-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+          <h2 class="text-base font-bold text-white">Sampel Bab / Teaser</h2>
+        </div>
+        <p class="text-xs text-slate-400">Klik tombol di bawah untuk membaca pratinjau bab yang tersedia:</p>
+
+        <div id="chapters-list" class="space-y-2.5 pt-1">
+          <!-- Tombol bab akan dimuat dinamis -->
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+    <p>&copy; 2026 Perpustakaan Digital LIT-HOOK QR</p>
+  </footer>
+
+  <script>
+    // Konfigurasi Supabase Client
+    const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (window.lucide) lucide.createIcons();
+
+      // Ambil ID dari Query Parameter URL (?id=...)
+      const urlParams = new URLSearchParams(window.location.search);
+      const bookId = urlParams.get("id");
+
+      if (!bookId) {
+        showError();
+        return;
+      }
+
+      // Ambil data buku dari Supabase
+      const { data: book, error } = await supabaseClient
+        .from("books")
+        .select("*")
+        .eq("id", bookId)
+        .single();
+
+      document.getElementById("loading-state").classList.add("hidden");
+
+      if (error || !book) {
+        showError();
+        return;
+      }
+
+      // Tampilkan konten buku
+      document.getElementById("book-content").classList.remove("hidden");
+
+      document.getElementById("book-cover").src = book.cover_url || "https://via.placeholder.com/150x220?text=No+Cover";
+      document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
+      document.getElementById("book-author").textContent = book.author ? `Penulis: ${book.author}` : "Penulis: -";
+      document.getElementById("book-category").textContent = book.category || "Umum";
+      document.getElementById("book-ddc").innerHTML = `<i data-lucide="bookmark" class="w-3.5 h-3.5 text-indigo-400"></i> DDC: ${book.ddc_code || '-'}`;
+      document.getElementById("book-shelf").innerHTML = `<i data-lucide="map-pin" class="w-3.5 h-3.5 text-indigo-400"></i> Rak: ${book.shelf_location || '-'}`;
+      document.getElementById("book-desc").textContent = book.description || "Belum ada ringkasan deskripsi untuk buku ini.";
+
+      // Render daftar bab
+      const chaptersContainer = document.getElementById("chapters-list");
+      chaptersContainer.innerHTML = "";
+
+      const chapters = [
+        { label: "Bab 1 — Sampel Teaser", url: book.chapter_1_url },
+        { label: "Bab 2 — Sampel Teaser", url: book.chapter_2_url },
+        { label: "Bab 3 — Sampel Teaser", url: book.chapter_3_url }
+      ].filter(item => item.url && item.url.trim() !== "");
+
+      if (chapters.length === 0) {
+        chaptersContainer.innerHTML = `<p class="text-xs text-slate-400 italic">Belum ada tautan bab yang diunggah untuk buku ini.</p>`;
+      } else {
+        chapters.forEach((ch, idx) => {
+          const a = document.createElement("a");
+          a.href = ch.url;
+          a.target = "_blank";
+          a.className = "flex items-center justify-between px-4 py-3 bg-slate-700/40 hover:bg-indigo-600/20 border border-slate-600/50 hover:border-indigo-500/50 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition group";
+          a.innerHTML = `
+            <span class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-md bg-indigo-500/20 text-indigo-400 text-[10px] flex items-center justify-center font-bold">${idx + 1}</span>
+              ${ch.label}
+            </span>
+            <i data-lucide="external-link" class="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition"></i>
+          `;
+          chaptersContainer.appendChild(a);
+        });
+      }
+
+      if (window.lucide) lucide.createIcons();
+    });
+
+    function showError() {
+      document.getElementById("loading-state").classList.add("hidden");
+      document.getElementById("error-state").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
