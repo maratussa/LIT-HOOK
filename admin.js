@@ -48,20 +48,33 @@ if (loginForm) {
 }
 
 // 5. Verifikasi Role Admin di Tabel admin_profiles
+// Gantikan fungsi checkAdminRole yang lama dengan kode ini:
 async function checkAdminRole(userId) {
+  console.log("Mengecek role untuk User ID:", userId);
+
   const { data, error } = await supabaseClient
     .from("admin_profiles")
     .select("role")
     .eq("auth_user_id", userId)
     .single();
 
-  if (error || !data || data.role !== "admin") {
+  if (error) {
+    console.error("Gagal membaca tabel admin_profiles:", error.message);
+    showError("Akses ditolak: Data admin tidak ditemukan di database.");
+    await supabaseClient.auth.signOut();
+    return;
+  }
+
+  if (!data || data.role !== "admin") {
+    console.warn("Role pengguna bukan admin:", data);
     showError("Akses ditolak: Akun Anda bukan administrator.");
     await supabaseClient.auth.signOut();
     return;
   }
 
-  // Tampilkan Dashboard
+  console.log("Role admin terverifikasi! Membuka dashboard...");
+
+  // Sembunyikan Form Login & Tampilkan Dashboard Admin
   if (loginSection) loginSection.classList.add("hidden");
   if (adminDashboard) adminDashboard.classList.remove("hidden");
 }
