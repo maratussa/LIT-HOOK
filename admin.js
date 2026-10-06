@@ -23,22 +23,23 @@ window.addEventListener("DOMContentLoaded", async () => {
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    console.log("Tombol login diklik!"); // Track 1
+
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    loginError.classList.add("hidden");
-
-    // Attempt Sign In
     const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: email,
       password: password,
     });
 
     if (error) {
-      showError(error.message);
+      console.log("Error Login:", error.message); // Track 2
+      alert("Gagal Login: " + error.message);
       return;
     }
 
+    console.log("Login Berhasil, Data User:", data); // Track 3
     if (data.user) {
       checkAdminRole(data.user.id);
     }
