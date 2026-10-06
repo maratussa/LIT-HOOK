@@ -23,8 +23,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log("Tombol login diklik!");
-
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
@@ -36,12 +34,9 @@ if (loginForm) {
     });
 
     if (error) {
-      console.error("Gagal Authentikasi:", error.message);
       showError(error.message);
       return;
     }
-
-    console.log("Login Berhasil, Data User:", data);
 
     if (data && data.user) {
       await checkAdminRole(data.user.id);
@@ -51,33 +46,21 @@ if (loginForm) {
 
 // 5. Verifikasi Hak Akses Admin & Buka Dashboard
 async function checkAdminRole(userId) {
-  console.log("Memulai verifikasi admin_profiles untuk ID:", userId);
-
   const { data, error } = await supabaseClient
     .from("admin_profiles")
     .select("role")
     .eq("auth_user_id", userId)
     .single();
 
-  if (error) {
-    console.error("Error Query Database:", error.message);
-    showError("Akses Ditolak: User ID Anda tidak ditemukan di tabel admin_profiles.");
+  if (error || !data || data.role !== "admin") {
+    showError("Akses Ditolak: Anda bukan administrator.");
     return;
   }
 
-  if (!data || data.role !== "admin") {
-    console.warn("User terdaftar tapi role bukan admin:", data);
-    showError("Akses Ditolak: Akun Anda bukan administrator.");
-    return;
-  }
-
-  console.log("Verifikasi Berhasil! Membuka Dashboard Admin...");
-
-  // Ambil elemen secara langsung untuk memastikan ketersediaan
+  // Tampilkan Dashboard
   const targetLogin = document.getElementById("loginSection");
   const targetDashboard = document.getElementById("adminDashboard");
 
-  // Paksa pergantian tampilan
   if (targetLogin) {
     targetLogin.classList.add("hidden");
     targetLogin.style.setProperty("display", "none", "important");
@@ -88,12 +71,25 @@ async function checkAdminRole(userId) {
     targetDashboard.style.setProperty("display", "flex", "important");
   }
 
-  // Muat data buku & ulasan setelah login berhasil
+  // Muat Data Katalog & Review
   loadBooks();
   loadReviews();
 }
 
-// 6. Fungsi Navigasi Tab
+// 6. Fungsi Logout Global (Sesuai onclick di admin.html)
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  window.location.reload();
+}
+
+// Jaga-jaga jika tombol logout menggunakan ID
+document.addEventListener("click", async (e) => {
+  if (e.target && (e.target.id === "logoutBtn" || e.target.closest("#logoutBtn"))) {
+    await handleLogout();
+  }
+});
+
+// 7. Navigasi Tab (Kelola Buku vs Review)
 function switchTab(tabName) {
   const tabBooks = document.getElementById("tab-books");
   const tabReviews = document.getElementById("tab-reviews");
@@ -113,7 +109,7 @@ function switchTab(tabName) {
   }
 }
 
-// 7. Muat & Kelola Buku dari Supabase
+// 8. Load Data Buku
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -142,8 +138,8 @@ async function loadBooks() {
       </td>
       <td class="p-4 text-xs font-semibold text-slate-600">${book.category || '-'}</td>
       <td class="p-4 text-xs">
-        <span class="block font-bold text-indigo-600">${book.ddc_code}</span>
-        <span class="text-slate-500">${book.shelf_location}</span>
+        <span class="block font-bold text-indigo-600">${book.ddc_code || '-'}</span>
+        <span class="text-slate-500">${book.shelf_location || '-'}</span>
       </td>
       <td class="p-4">
         <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-full ${book.status === 'Tersedia' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
@@ -167,7 +163,7 @@ async function loadBooks() {
   if (window.lucide) lucide.createIcons();
 }
 
-// 8. Muat & Kelola Ulasan Siswa
+// 9. Load Ulasan Siswa
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
   if (!tableBody) return;
@@ -177,10 +173,7 @@ async function loadReviews() {
     .select("*, books(title)")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Gagal memuat review:", error.message);
-    return;
-  }
+  if (error) return;
 
   tableBody.innerHTML = "";
   reviews.forEach((review) => {
@@ -208,7 +201,7 @@ async function loadReviews() {
   });
 }
 
-// 9. Modal Tambah/Edit Buku
+// 10. Kontrol Modal Form Buku
 function openBookModal() {
   const modal = document.getElementById("admin-book-modal");
   if (modal) modal.classList.remove("hidden");
@@ -216,10 +209,50 @@ function openBookModal() {
 
 function closeBookModal() {
   const modal = document.getElementById("admin-book-modal");
+  const form = document.getElementById("book-form");
   if (modal) modal.classList.add("hidden");
+  if (form) form.reset();
 }
 
-// 10. Generate QR Code Modal
+// 11. Handler Tambah Buku
+document.addEventListener("DOMContentLoaded", () => {
+  const bookForm = document.getElementById("book-form");
+  if (bookForm) {
+    bookForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const submitBtn = bookForm.querySelector("button[type='submit']");
+      if (submitBtn) submitBtn.disabled = true;
+
+      const bookData = {
+        title: document.getElementById("form-title").value,
+        author: document.getElementById("form-author").value,
+        ddc_code: document.getElementById("form-ddc").value,
+        shelf_location: document.getElementById("form-shelf").value,
+        category: document.getElementById("form-category").value,
+        cover_url: document.getElementById("form-cover").value,
+        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : "",
+        chapter_1_url: document.getElementById("form-ch1").value || null,
+        chapter_2_url: document.getElementById("form-ch2").value || null,
+        chapter_3_url: document.getElementById("form-ch3").value || null,
+      };
+
+      const { error } = await supabaseClient.from("books").insert([bookData]);
+
+      if (submitBtn) submitBtn.disabled = false;
+
+      if (error) {
+        alert("Gagal menyimpan buku: " + error.message);
+      } else {
+        alert("Buku berhasil ditambahkan!");
+        closeBookModal();
+        loadBooks();
+      }
+    });
+  }
+});
+
+// 12. Modal QR Code & Hapus Buku
 function generateQr(bookId, bookTitle) {
   const qrModal = document.getElementById("qr-modal");
   const qrContainer = document.getElementById("qrcode");
@@ -246,7 +279,6 @@ function closeQrModal() {
   if (qrModal) qrModal.classList.add("hidden");
 }
 
-// 11. Hapus Buku
 async function deleteBook(bookId) {
   if (!confirm("Apakah Anda yakin ingin menghapus buku ini?")) return;
 
@@ -258,38 +290,15 @@ async function deleteBook(bookId) {
   }
 }
 
-// 12. Modal Submit Form Buku
-const bookForm = document.getElementById("book-form");
-if (bookForm) {
-  bookForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const bookData = {
-      title: document.getElementById("form-title").value,
-      author: document.getElementById("form-author").value,
-      ddc_code: document.getElementById("form-ddc").value,
-      shelf_location: document.getElementById("form-shelf").value,
-      category: document.getElementById("form-category").value,
-      cover_url: document.getElementById("form-cover").value,
-      description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : "",
-      chapter_1_url: document.getElementById("form-ch1").value,
-      chapter_2_url: document.getElementById("form-ch2").value,
-      chapter_3_url: document.getElementById("form-ch3").value,
-    };
-
-    const { error } = await supabaseClient.from("books").insert([bookData]);
-
-    if (error) {
-      alert("Gagal menyimpan buku: " + error.message);
-    } else {
-      closeBookModal();
-      bookForm.reset();
-      loadBooks();
-    }
-  });
+async function toggleApproveReview(reviewId, status) {
+  const { error } = await supabaseClient.from("reviews").update({ is_approved: status }).eq("id", reviewId);
+  if (error) {
+    alert("Gagal memperbarui ulasan: " + error.message);
+  } else {
+    loadReviews();
+  }
 }
 
-// 13. Tampilkan Pesan Error
 function showError(msg) {
   if (loginError) {
     loginError.textContent = msg;
@@ -297,13 +306,4 @@ function showError(msg) {
   } else {
     alert(msg);
   }
-}
-
-// 14. Handle Logout
-const logoutBtn = document.getElementById("logoutBtn");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    await supabaseClient.auth.signOut();
-    window.location.reload();
-  });
 }
