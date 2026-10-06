@@ -231,10 +231,10 @@ document.addEventListener("DOMContentLoaded", () => {
         shelf_location: document.getElementById("form-shelf").value,
         category: document.getElementById("form-category").value,
         cover_url: document.getElementById("form-cover").value,
-        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : "",
+        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
-        chapter_3_url: document.getElementById("form-ch3").value || null,
+        chapter_3_url: document.getElementById("form-ch3").value || null
       };
 
       const { error } = await supabaseClient.from("books").insert([bookData]);
