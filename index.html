@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIT-HOOK QR — Literacy Hook & Interactive QR Teaser System</title>
+  <title>LIT-HOOK QR — Katalog Teaser Buku</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS Client -->
@@ -15,7 +15,7 @@
 
   <!-- NAVBAR HEADER -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
       <a href="index.html" class="flex items-center gap-2">
         <div class="bg-indigo-600 text-white p-2 rounded-xl">
           <i data-lucide="qr-code" class="w-5 h-5"></i>
@@ -27,70 +27,66 @@
       </a>
 
       <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600">
-        <a href="#beranda" class="hover:text-indigo-600 transition">Beranda</a>
-        <a href="#katalog" class="hover:text-indigo-600 transition">Jelajahi Buku</a>
+        <a href="#katalog" class="hover:text-indigo-600 transition">Beranda</a>
         <a href="admin.html" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition">Dashboard Admin</a>
       </nav>
     </div>
   </header>
 
-  <!-- HERO SECTION -->
-  <section id="beranda" class="bg-gradient-to-b from-indigo-50/50 to-slate-50 py-12 px-4 border-b border-slate-200/60">
-    <div class="max-w-6xl mx-auto text-center space-y-4">
-      <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-extrabold rounded-full tracking-wide">
-        SMK NEGERI 3 TUBAN
-      </span>
-      <h1 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">
-        Temukan & Cuplik Buku Favoritmu!
-      </h1>
-      <p class="text-slate-600 max-w-xl mx-auto text-sm md:text-base">
-        Pindai QR Code di rak perpustakaan untuk membaca bab sampel, melihat review, dan menemukan lokasi buku secara presisi.
-      </p>
-
-      <!-- STATISTIK TOTAL BUKU -->
-      <div class="pt-4 flex justify-center">
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4 min-w-[200px]">
-          <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <i data-lucide="book-open" class="w-6 h-6"></i>
-          </div>
-          <div class="text-left">
-            <span class="block text-2xl font-black text-slate-900 leading-none" id="total-books-count">0</span>
-            <span class="text-xs font-semibold text-slate-500">Buku Terdaftar</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- KATALOG / JELAJAHI BUKU SECTION -->
-  <main id="katalog" class="max-w-6xl mx-auto px-4 py-10 w-full flex-grow">
-    <div class="flex items-center justify-between mb-6">
+  <!-- KATALOG TEASER BUKU -->
+  <main id="katalog" class="max-w-7xl mx-auto px-6 py-10 w-full flex-grow">
+    
+    <!-- HEADER KATALOG + SEARCH & FILTER -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
       <div>
-        <h2 class="text-xl font-bold text-slate-900">Jelajahi Katalog Buku</h2>
-        <p class="text-xs text-slate-500">Daftar buku yang tersedia di perpustakaan sekolah</p>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Katalog Teaser Buku</h1>
+        <p class="text-sm text-slate-500 mt-1">Pilih buku fisik yang ingin kamu intip teaser multimedia-nya</p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Input Pencarian -->
+        <div class="relative w-full sm:w-64">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Cari judul/penulis..." 
+            class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm"
+          >
+        </div>
+
+        <!-- Filter Kategori -->
+        <select 
+          id="category-filter" 
+          class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition shadow-sm cursor-pointer"
+        >
+          <option value="">Semua Kategori</option>
+          <option value="Fiksi">Fiksi</option>
+          <option value="Sains">Sains</option>
+          <option value="Biografi">Biografi</option>
+          <option value="Sejarah">Sejarah</option>
+        </select>
       </div>
     </div>
 
     <!-- KONTAINER GRID BUKU -->
-    <div id="books-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-      <p class="col-span-full text-center text-slate-400 py-10">Memuat katalog buku...</p>
+    <div id="books-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <p class="col-span-full text-center text-slate-400 py-12">Memuat katalog buku...</p>
     </div>
   </main>
 
   <!-- FOOTER -->
   <footer class="bg-white border-t border-slate-200 py-6 mt-auto">
-    <div class="max-w-6xl mx-auto px-4 text-center text-xs font-medium text-slate-500">
+    <div class="max-w-7xl mx-auto px-6 text-center text-xs font-medium text-slate-500">
       &copy; 2026 LIT-HOOK QR — SMK Negeri 3 Tuban. All rights reserved.
     </div>
   </footer>
 
-  <!-- SKRIP APLIKASI & LUKIS IKON -->
+  <!-- SCRIPT -->
   <script src="app.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      if (window.lucide) {
-        lucide.createIcons();
-      }
+      if (window.lucide) lucide.createIcons();
     });
   </script>
 </body>
