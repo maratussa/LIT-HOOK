@@ -1,6 +1,7 @@
 // 1. Konfigurasi Supabase Client
-const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co";
-const SUPABASE_ANON_KEY = "PASTE_SUPABASE_ANON_KEY_KAMU_DI_SINI"; // Pastikan diisi kunci anon
+const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
+
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
