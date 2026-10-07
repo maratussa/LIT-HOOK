@@ -271,6 +271,8 @@ document.addEventListener("DOMContentLoaded", () => {
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
         chapter_3_url: document.getElementById("form-ch3").value || null,
+        url_video: document.getElementById("form-ch3").value || null,
+        
       };
 
       let response;
