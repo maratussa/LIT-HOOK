@@ -1,3 +1,21 @@
+Pesan `Uncaught SyntaxError: Unexpected end of input (admin.js:277)` terjadi karena file `admin.js` di browser Anda masih terpotong atau memakai file lama yang belum lengkap penutup kurung kurawalnya (`}`).
+
+Untuk mengatasi masalah ini secara total, berikut langkah-langkah mudah beserta kode utuh file `admin.js`:
+
+---
+
+### Langkah Perbaikan:
+
+1. Hapus seluruh isi file `admin.js` Anda saat ini.
+2. Salin (*copy*) **seluruh kode lengkap** di bawah ini dari baris paling atas sampai baris paling bawah.
+3. Simpan (*save*) file `admin.js`.
+4. Buka browser, tekan **`Ctrl` + `Shift` + `R**` (atau **`Ctrl` + `F5**`) pada halaman `admin.html` untuk membersihkan cache skrip lama.
+
+---
+
+### Kode Utuh `admin.js`
+
+```javascript
 // Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
@@ -351,3 +369,4 @@ function showError(msg) {
     alert(msg);
   }
 }
+
