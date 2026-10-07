@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
       const videoValue = videoInput ? videoInput.value.trim() : "";
 
-      // HANYA MENGIRIM KAN KOLOM YANG PASTI ADA DI SUPABASE
+      // HANYA MENGIRIMKAN KOLOM YANG TERDAFTAR DI SUPABASE
       const bookData = {
         title: document.getElementById("form-title").value,
         author: document.getElementById("form-author").value,
@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         category: document.getElementById("form-category").value,
         cover_url: document.getElementById("form-cover").value,
         description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
-        video_url: videoValue, // Nama kolom resmi di Supabase
+        video_url: videoValue,
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
         chapter_3_url: document.getElementById("form-ch3").value || null
@@ -273,74 +273,4 @@ function editBook(book) {
   document.getElementById("form-cover").value = book.cover_url || "";
   
   if (document.getElementById("form-desc")) {
-    document.getElementById("form-desc").value = book.description || "";
-  }
-
-  // Menampilkan data video saat edit
-  const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
-  if (videoInput) {
-    videoInput.value = book.video_url || "";
-  }
-
-  document.getElementById("form-ch1").value = book.chapter_1_url || "";
-  document.getElementById("form-ch2").value = book.chapter_2_url || "";
-  document.getElementById("form-ch3").value = book.chapter_3_url || "";
-
-  const modalTitle = document.getElementById("modal-title");
-  if (modalTitle) modalTitle.textContent = "Edit Data Buku";
-
-  const modal = document.getElementById("admin-book-modal");
-  if (modal) modal.classList.remove("hidden");
-}
-
-// Cetak QR Code
-function generateQr(bookId, bookTitle) {
-  const qrModal = document.getElementById("qr-modal");
-  const qrContainer = document.getElementById("qrcode");
-  const titleElem = document.getElementById("qr-book-title");
-
-  if (!qrModal || !qrContainer) return;
-
-  qrContainer.innerHTML = "";
-  if (titleElem) titleElem.textContent = bookTitle;
-
-  const currentUrl = window.location.href;
-  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
-  const targetUrl = `${baseUrl}/preview.html?id=${bookId}`;
-
-  new QRCode(qrContainer, {
-    text: targetUrl,
-    width: 180,
-    height: 180,
-  });
-
-  qrModal.classList.remove("hidden");
-}
-
-function closeQrModal() {
-  const qrModal = document.getElementById("qr-modal");
-  if (qrModal) qrModal.classList.add("hidden");
-}
-
-async function deleteBook(bookId) {
-  if (!confirm("Apakah Anda yakin ingin menghapus buku ini?")) return;
-
-  const { error } = await supabaseClient.from("books").delete().eq("id", bookId);
-  if (error) {
-    alert("Gagal menghapus buku: " + error.message);
-  } else {
-    loadBooks();
-  }
-}
-
-async function toggleApproveReview(reviewId, status) {
-  const { error } = await supabaseClient.from("reviews").update({ is_approved: status }).eq("id", reviewId);
-  if (error) {
-    alert("Gagal memperbarui ulasan: " + error.message);
-  } else {
-    loadReviews();
-  }
-}
-
-function showError(msg) {
-  const loginError = document.getElementById("loginError");
+    document.
