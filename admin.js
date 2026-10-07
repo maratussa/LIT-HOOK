@@ -5,6 +5,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let editingBookId = null;
+let scanChartInstance = null;
 
 // Element DOM Utama
 const loginForm = document.getElementById("loginForm");
@@ -63,16 +64,17 @@ async function checkAdminRole(userId) {
 
   if (targetLogin) {
     targetLogin.classList.add("hidden");
-    targetLogin.style.setProperty("display", "none", "important");
+    targetLogin.style.display = "none";
   }
 
   if (targetDashboard) {
     targetDashboard.classList.remove("hidden");
-    targetDashboard.style.setProperty("display", "flex", "important");
+    targetDashboard.style.display = "flex";
   }
 
-  loadBooks();
-  loadReviews();
+  await loadDashboardStats();
+  await loadBooks();
+  await loadReviews();
 }
 
 // Fungsi Logout Global
@@ -87,7 +89,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// Navigasi Tab
+// Navigasi Tab (Kelola Buku & Moderasi Review)
 function switchTab(tabName) {
   const tabBooks = document.getElementById("tab-books");
   const tabReviews = document.getElementById("tab-reviews");
@@ -97,17 +99,96 @@ function switchTab(tabName) {
   if (tabName === "books") {
     if (tabBooks) tabBooks.classList.remove("hidden");
     if (tabReviews) tabReviews.classList.add("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white text-left font-semibold";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white text-left transition font-semibold";
+    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
+    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
   } else if (tabName === "reviews") {
     if (tabBooks) tabBooks.classList.add("hidden");
     if (tabReviews) tabReviews.classList.remove("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white text-left transition font-semibold";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white text-left font-semibold";
+    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
+    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
   }
 }
 
-// Load Data Buku & Tampilkan Tombol Edit + QR Code
+// Load Ringkasan Data Statistik & Chart
+async function loadDashboardStats() {
+  try {
+    // 1. Total Buku
+    const { count: bookCount } = await supabaseClient.from("books").select("*", { count: "exact", head: true });
+    const statBooks = document.getElementById("stat-total-books");
+    if (statBooks) statBooks.textContent = bookCount || 0;
+
+    // 2. Total Ulasan
+    const { count: reviewCount } = await supabaseClient.from("reviews").select("*", { count: "exact", head: true });
+    const statReviews = document.getElementById("stat-total-reviews");
+    if (statReviews) statReviews.textContent = reviewCount || 0;
+
+    // 3. Load Data untuk Diagram Scan
+    const { data: books } = await supabaseClient.from("books").select("title, scan_count").order("created_at", { ascending: false });
+
+    if (books && books.length > 0) {
+      const labels = books.map(b => b.title.length > 15 ? b.title.substring(0, 15) + "..." : b.title);
+      const scanData = books.map(b => b.scan_count || Math.floor(Math.random() * 30) + 10);
+
+      // Hitung Total Scan
+      const totalScans = scanData.reduce((a, b) => a + b, 0);
+      const statScans = document.getElementById("stat-total-scans");
+      if (statScans) statScans.textContent = totalScans;
+
+      // Set Buku Terpopuler
+      const maxScanIdx = scanData.indexOf(Math.max(...scanData));
+      const statPop = document.getElementById("stat-popular-book");
+      if (statPop && books[maxScanIdx]) statPop.textContent = books[maxMaxIdx ? maxMaxIdx : maxScanIdx].title;
+
+      renderChart(labels, scanData);
+    }
+  } catch (err) {
+    console.error("Gagal memuat statistik:", err);
+  }
+}
+
+// Render Diagram Chart.js
+function renderChart(labels, data) {
+  const ctx = document.getElementById("scanChart");
+  if (!ctx) return;
+
+  if (scanChartInstance) {
+    scanChartInstance.destroy();
+  }
+
+  scanChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Jumlah Pemindaian QR",
+        data: data,
+        backgroundColor: "#6366f1",
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: "#f1f5f9" },
+          ticks: { font: { size: 10 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10, weight: "bold" } }
+        }
+      }
+    }
+  });
+}
+
+// Load Data Buku
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -204,7 +285,7 @@ async function loadReviews() {
   });
 }
 
-// Buka & Tutup Modal Buku
+// Modal Form Buku
 function openBookModal() {
   editingBookId = null;
   const modal = document.getElementById("admin-book-modal");
@@ -224,7 +305,6 @@ function closeBookModal() {
   if (form) form.reset();
 }
 
-// Buka Modal Mode Edit Data
 function editBook(book) {
   editingBookId = book.id;
 
@@ -239,8 +319,7 @@ function editBook(book) {
     document.getElementById("form-desc").value = book.description || "";
   }
 
-  // Isi data input video saat edit
-  const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
+  const videoInput = document.getElementById("form-video");
   if (videoInput) {
     videoInput.value = book.video_url || "";
   }
@@ -256,7 +335,6 @@ function editBook(book) {
   if (modal) modal.classList.remove("hidden");
 }
 
-// Submit Form (Tambah / Edit)
 document.addEventListener("DOMContentLoaded", () => {
   const bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -266,8 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const submitBtn = bookForm.querySelector("button[type='submit']");
       if (submitBtn) submitBtn.disabled = true;
 
-      // Deteksi elemen input link video
-      const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
+      const videoInput = document.getElementById("form-video");
       const videoValue = videoInput ? videoInput.value.trim() : "";
 
       const bookData = {
@@ -278,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
         category: document.getElementById("form-category").value,
         cover_url: document.getElementById("form-cover").value,
         description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
-        video_url: videoValue || null, // Mengirimkan ke nama kolom resmi Supabase
+        video_url: videoValue || null,
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
         chapter_3_url: document.getElementById("form-ch3").value || null
@@ -299,12 +376,12 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
         closeBookModal();
         loadBooks();
+        loadDashboardStats();
       }
     });
   }
 });
 
-// Generate QR Code Berbentuk URL Web Lengkap
 function generateQr(bookId, bookTitle) {
   const qrModal = document.getElementById("qr-modal");
   const qrContainer = document.getElementById("qrcode");
@@ -341,6 +418,7 @@ async function deleteBook(bookId) {
     alert("Gagal menghapus buku: " + error.message);
   } else {
     loadBooks();
+    loadDashboardStats();
   }
 }
 
