@@ -116,3 +116,117 @@
           <h2 class="text-2xl font-black text-slate-900 tracking-tight">Moderasi Ulasan Siswa</h2>
           <p class="text-xs text-slate-500 mt-1">Tinjau dan setujui ulasan yang masuk dari para pembaca</p>
         </div>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50/80 text-slate-500 border-b border-slate-200 text-[11px] font-extrabold uppercase tracking-wider">
+                <tr>
+                  <th class="p-4">Buku</th>
+                  <th class="p-4">Siswa</th>
+                  <th class="p-4">Rating & Ulasan</th>
+                  <th class="p-4">Status</th>
+                  <th class="p-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-reviews-table" class="divide-y divide-slate-100">
+                <!-- Baris ulasan dimuat dinamis -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Tambah / Edit Buku -->
+  <div id="admin-book-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+        <h3 id="modal-title" class="text-base font-bold text-slate-900">Tambah Buku Baru</h3>
+        <button type="button" onclick="closeBookModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <form id="book-form" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Judul Buku *</label>
+          <input type="text" id="form-title" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Penulis *</label>
+          <input type="text" id="form-author" required class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kode DDC</label>
+            <input type="text" id="form-ddc" placeholder="mis. 800" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Lokasi Rak</label>
+            <input type="text" id="form-shelf" placeholder="mis. Rak A-1" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+          <input type="text" id="form-category" placeholder="Fiksi, Sains, Sejarah..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">URL Sampul (Cover)</label>
+          <input type="text" id="form-cover" placeholder="https://..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Deskripsi / Sinopsis</label>
+          <textarea id="form-desc" rows="3" placeholder="Ringkasan singkat tentang isi buku..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all resize-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">URL Video Teaster</label>
+          <input type="text" id="form-cover" placeholder="https://..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+        </div>
+        
+        <div class="pt-3 border-t border-slate-100 space-y-2.5">
+          <p class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600">Tautan Bab Sampel</p>
+          <input type="text" id="form-ch1" placeholder="URL Bab 1" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:border-indigo-600 outline-none">
+          <input type="text" id="form-ch2" placeholder="URL Bab 2" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:border-indigo-600 outline-none">
+          <input type="text" id="form-ch3" placeholder="URL Bab 3" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:border-indigo-600 outline-none">
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+          <button type="button" onclick="closeBookModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">Batal</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition">Simpan Buku</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL CETAK QR CODE BUKU -->
+  <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
+    <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full shadow-2xl border border-slate-100">
+      <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="qr-code" class="w-5 h-5"></i>
+      </div>
+      <h3 class="text-base font-extrabold text-slate-900">QR Code Teaser</h3>
+      <p id="qr-book-title" class="text-xs font-medium text-slate-500 mb-4 mt-1 line-clamp-1"></p>
+      
+      <div id="qrcode" class="flex justify-center mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200"></div>
+      
+      <div class="flex gap-2 justify-center">
+        <button onclick="closeQrModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">Tutup</button>
+        <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak QR
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Berkas JS Utama Admin -->
+  <script src="admin.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>
