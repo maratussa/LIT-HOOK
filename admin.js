@@ -1,34 +1,32 @@
-Pesan `Uncaught SyntaxError: Unexpected end of input (admin.js:277)` terjadi karena file `admin.js` di browser Anda masih terpotong atau memakai file lama yang belum lengkap penutup kurung kurawalnya (`}`).
-
-Untuk mengatasi masalah ini secara total, berikut langkah-langkah mudah beserta kode utuh file `admin.js`:
-
----
-
-### Langkah Perbaikan:
-
-1. Hapus seluruh isi file `admin.js` Anda saat ini.
-2. Salin (*copy*) **seluruh kode lengkap** di bawah ini dari baris paling atas sampai baris paling bawah.
-3. Simpan (*save*) file `admin.js`.
-4. Buka browser, tekan **`Ctrl` + `Shift` + `R**` (atau **`Ctrl` + `F5**`) pada halaman `admin.html` untuk membersihkan cache skrip lama.
-
----
-
-### Kode Utuh `admin.js`
-
-```javascript
 // Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabaseClient = null;
 let editingBookId = null;
 
-// Jalankan event listener saat DOM siap
+// Inisialisasi Supabase
+try {
+  if (typeof supabase !== "undefined") {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } else {
+    console.error("Library Supabase (CDN) belum termuat di admin.html");
+  }
+} catch (err) {
+  console.error("Error inisialisasi Supabase:", err);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   // Cek Sesi Tersimpan
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) {
-    showDashboard();
+  if (supabaseClient) {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        showDashboard();
+      }
+    } catch (e) {
+      console.warn("Gagal mengecek sesi:", e);
+    }
   }
 
   // 1. HANDLER LOGIN ADMIN
@@ -46,19 +44,45 @@ document.addEventListener("DOMContentLoaded", async () => {
       const email = emailInput ? emailInput.value.trim() : "";
       const password = passwordInput ? passwordInput.value : "";
 
-      // Proses Login Supabase Auth
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        showError("Login Gagal: " + error.message);
+      if (!email || !password) {
+        showError("Email dan Password wajib diisi!");
         return;
       }
 
-      if (data && data.user) {
-        showDashboard();
+      if (!supabaseClient) {
+        showError("Sistem Supabase belum siap. Pastikan koneksi internet lancar dan muat ulang halaman.");
+        return;
+      }
+
+      // Tampilkan indikator proses
+      const submitBtn = loginForm.querySelector("button[type='submit']");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Memproses...";
+      }
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password,
+        });
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Masuk Admin";
+        }
+
+        if (error) {
+          showError("Login Gagal: " + error.message);
+        } else if (data && data.user) {
+          showDashboard();
+        }
+      } catch (err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "Masuk Admin";
+        }
+        showError("Terjadi kesalahan sistem: " + err.message);
       }
     });
   }
@@ -72,11 +96,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       const submitBtn = bookForm.querySelector("button[type='submit']");
       if (submitBtn) submitBtn.disabled = true;
 
-      // Ambil elemen input video
       const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
       const videoValue = videoInput ? videoInput.value.trim() : "";
 
-      // HANYA MENGIRIMKAN KOLOM YANG TERDAFTAR DI SUPABASE
       const bookData = {
         title: document.getElementById("form-title").value,
         author: document.getElementById("form-author").value,
@@ -111,7 +133,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// Fungsi Menampilkan Dashboard Admin
+// Menampilkan Dashboard Admin
 function showDashboard() {
   const targetLogin = document.getElementById("loginSection");
   const targetDashboard = document.getElementById("adminDashboard");
@@ -130,9 +152,9 @@ function showDashboard() {
   loadReviews();
 }
 
-// Fungsi Logout Global
+// Logout
 async function handleLogout() {
-  await supabaseClient.auth.signOut();
+  if (supabaseClient) await supabaseClient.auth.signOut();
   window.location.reload();
 }
 
@@ -165,7 +187,7 @@ function switchTab(tabName) {
 // Load Data Buku
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
-  if (!tableBody) return;
+  if (!tableBody || !supabaseClient) return;
 
   const { data: books, error } = await supabaseClient
     .from("books")
@@ -224,7 +246,7 @@ async function loadBooks() {
 // Load Review
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
-  if (!tableBody) return;
+  if (!tableBody || !supabaseClient) return;
 
   const { data: reviews, error } = await supabaseClient
     .from("reviews")
@@ -294,7 +316,6 @@ function editBook(book) {
     document.getElementById("form-desc").value = book.description || "";
   }
 
-  // Menampilkan data video saat edit
   const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
   if (videoInput) {
     videoInput.value = book.video_url || "";
@@ -365,8 +386,6 @@ function showError(msg) {
   if (loginError) {
     loginError.textContent = msg;
     loginError.classList.remove("hidden");
-  } else {
-    alert(msg);
   }
+  alert(msg);
 }
-
