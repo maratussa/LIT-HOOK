@@ -6,44 +6,101 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let editingBookId = null;
 
-// Element DOM Utama
-const loginForm = document.getElementById("loginForm");
-const loginSection = document.getElementById("loginSection");
-const adminDashboard = document.getElementById("adminDashboard");
-const loginError = document.getElementById("loginError");
+// Jalankan Inisialisasi Saat DOM Selesai Dimuat
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("Inisialisasi Admin JS...");
 
-// Cek Sesi Saat Halaman Dimuat
-window.addEventListener("DOMContentLoaded", async () => {
+  // Element DOM Utama
+  const loginForm = document.getElementById("loginForm");
+
+  // Cek Sesi Akun Saat Halaman Dimuat
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
+    console.log("Sesi ditemukan untuk user:", session.user.email);
     await checkAdminRole(session.user.id);
   }
-});
 
-// Form Submit Handler (Login)
-if (loginForm) {
-  loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  // Event Listener Form Login
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      console.log("Proses submit login dimulai...");
 
-    if (loginError) loginError.classList.add("hidden");
+      const emailInput = document.getElementById("email");
+      const passwordInput = document.getElementById("password");
+      const loginError = document.getElementById("loginError");
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email: email,
-      password: password,
+      if (loginError) loginError.classList.add("hidden");
+
+      const email = emailInput ? emailInput.value.trim() : "";
+      const password = passwordInput ? passwordInput.value : "";
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        console.error("Gagal Login:", error.message);
+        showError(error.message);
+        return;
+      }
+
+      if (data && data.user) {
+        console.log("Login Auth Berhasil, memeriksa role admin...");
+        await checkAdminRole(data.user.id);
+      }
     });
+  } else {
+    console.warn("Element #loginForm tidak ditemukan di DOM!");
+  }
 
-    if (error) {
-      showError(error.message);
-      return;
-    }
+  // Event Listener Form Buku (Tambah/Edit)
+  const bookForm = document.getElementById("book-form");
+  if (bookForm) {
+    bookForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    if (data && data.user) {
-      await checkAdminRole(data.user.id);
-    }
-  });
-}
+      const submitBtn = bookForm.querySelector("button[type='submit']");
+      if (submitBtn) submitBtn.disabled = true;
+
+      const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
+      const videoValue = videoInput ? videoInput.value.trim() : null;
+
+      const bookData = {
+        title: document.getElementById("form-title").value,
+        author: document.getElementById("form-author").value,
+        ddc_code: document.getElementById("form-ddc").value,
+        shelf_location: document.getElementById("form-shelf").value,
+        category: document.getElementById("form-category").value,
+        cover_url: document.getElementById("form-cover").value,
+        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
+        video_url: videoValue,
+        url_video: videoValue,
+        chapter_1_url: document.getElementById("form-ch1").value || null,
+        chapter_2_url: document.getElementById("form-ch2").value || null,
+        chapter_3_url: document.getElementById("form-ch3").value || null
+      };
+
+      let response;
+      if (editingBookId) {
+        response = await supabaseClient.from("books").update(bookData).eq("id", editingBookId);
+      } else {
+        response = await supabaseClient.from("books").insert([bookData]);
+      }
+
+      if (submitBtn) submitBtn.disabled = false;
+
+      if (response.error) {
+        alert("Gagal menyimpan data: " + response.error.message);
+      } else {
+        alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
+        closeBookModal();
+        loadBooks();
+      }
+    });
+  }
+});
 
 // Verifikasi Hak Akses Admin & Buka Dashboard
 async function checkAdminRole(userId) {
@@ -87,7 +144,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// Navigasi Tab
+// Navigasi Tab Admin
 function switchTab(tabName) {
   const tabBooks = document.getElementById("tab-books");
   const tabReviews = document.getElementById("tab-reviews");
@@ -97,17 +154,17 @@ function switchTab(tabName) {
   if (tabName === "books") {
     if (tabBooks) tabBooks.classList.remove("hidden");
     if (tabReviews) tabReviews.classList.add("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white text-left font-semibold";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white text-left transition font-semibold";
+    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
+    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
   } else if (tabName === "reviews") {
     if (tabBooks) tabBooks.classList.add("hidden");
     if (tabReviews) tabReviews.classList.remove("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white text-left transition font-semibold";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white text-left font-semibold";
+    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
+    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition text-left";
   }
 }
 
-// Load Data Buku & Tampilkan Tombol Edit + QR Code
+// Load Data Buku
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -166,7 +223,7 @@ async function loadBooks() {
   if (window.lucide) lucide.createIcons();
 }
 
-// Load Ulasan Siswa
+// Load Review
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
   if (!tableBody) return;
@@ -185,90 +242,4 @@ async function loadReviews() {
     tr.innerHTML = `
       <td class="p-4 font-bold text-slate-800">${review.books ? review.books.title : 'Buku Dihapus'}</td>
       <td class="p-4 text-xs text-slate-600">${review.student_name || 'Anonim'}</td>
-      <td class="p-4 text-xs">
-        <div class="text-amber-500 font-bold">★ ${review.rating}/5</div>
-        <p class="text-slate-600 italic">"${review.comment}"</p>
-      </td>
-      <td class="p-4">
-        <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-full ${review.is_approved ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
-          ${review.is_approved ? 'Disetujui' : 'Pending'}
-        </span>
-      </td>
-      <td class="p-4 text-center">
-        <button onclick="toggleApproveReview('${review.id}', ${!review.is_approved})" class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100">
-          ${review.is_approved ? 'Batalkan' : 'Setujui'}
-        </button>
-      </td>
-    `;
-    tableBody.appendChild(tr);
-  });
-}
-
-// Buka & Tutup Modal Buku
-function openBookModal() {
-  editingBookId = null;
-  const modal = document.getElementById("admin-book-modal");
-  const form = document.getElementById("book-form");
-  const modalTitle = document.getElementById("modal-title");
-
-  if (form) form.reset();
-  if (modalTitle) modalTitle.textContent = "Tambah Buku Baru";
-  if (modal) modal.classList.remove("hidden");
-}
-
-function closeBookModal() {
-  editingBookId = null;
-  const modal = document.getElementById("admin-book-modal");
-  const form = document.getElementById("book-form");
-  if (modal) modal.classList.add("hidden");
-  if (form) form.reset();
-}
-
-// Buka Modal Mode Edit Data
-function editBook(book) {
-  editingBookId = book.id;
-
-  document.getElementById("form-title").value = book.title || "";
-  document.getElementById("form-author").value = book.author || "";
-  document.getElementById("form-ddc").value = book.ddc_code || "";
-  document.getElementById("form-shelf").value = book.shelf_location || "";
-  document.getElementById("form-category").value = book.category || "";
-  document.getElementById("form-cover").value = book.cover_url || "";
-  
-  if (document.getElementById("form-desc")) {
-    document.getElementById("form-desc").value = book.description || "";
-  }
-
-  // Mengisi data URL Video Teaser saat mode Edit
-  const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
-  if (videoInput) {
-    videoInput.value = book.video_url || book.url_video || "";
-  }
-
-  document.getElementById("form-ch1").value = book.chapter_1_url || "";
-  document.getElementById("form-ch2").value = book.chapter_2_url || "";
-  document.getElementById("form-ch3").value = book.chapter_3_url || "";
-
-  const modalTitle = document.getElementById("modal-title");
-  if (modalTitle) modalTitle.textContent = "Edit Data Buku";
-
-  const modal = document.getElementById("admin-book-modal");
-  if (modal) modal.classList.remove("hidden");
-}
-
-// Submit Form (Tambah / Edit)
-document.addEventListener("DOMContentLoaded", () => {
-  const bookForm = document.getElementById("book-form");
-  if (bookForm) {
-    bookForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const submitBtn = bookForm.querySelector("button[type='submit']");
-      if (submitBtn) submitBtn.disabled = true;
-
-      // Ambil elemen input video (mendukung id 'form-video' atau 'book-video-url')
-      const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
-      const videoValue = videoInput ? videoInput.value.trim() : null;
-
-      const bookData = {
-        title: document.getElementById("form
+      <td class="p-4 text-
