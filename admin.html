@@ -12,8 +12,10 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Library QR Code Generator -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Chart.js CDN untuk Diagram -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-800 font-sans antialiased min-h-screen">
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen">
 
   <!-- FORM LOGIN ADMIN -->
   <div id="loginSection" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
@@ -50,8 +52,8 @@
 
   <!-- DASHBOARD UTAMA ADMIN (Disembunyikan sebelum Login) -->
   <div id="adminDashboard" class="hidden min-h-screen flex flex-col md:flex-row bg-slate-100">
-    <!-- Sidebar -->
-    <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex flex-col justify-between border-r border-slate-800">
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex flex-col justify-between border-r border-slate-800 shrink-0">
       <div>
         <div class="flex items-center gap-3 mb-8 px-2">
           <div class="bg-indigo-600 text-white p-2 rounded-xl">
@@ -77,17 +79,109 @@
     </aside>
 
     <!-- Main Content Panel -->
-    <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-      <!-- TAB KELOLA BUKU -->
-      <div id="tab-books">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Kelola Katalog Buku</h2>
-            <p class="text-xs text-slate-500 mt-1">Atur informasi buku, lokasi rak, dan buat QR code teaser</p>
-          </div>
-          <button onclick="openBookModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 active:scale-95 transition shadow-sm">
+    <main class="flex-1 p-4 md:p-8 overflow-y-auto space-y-6">
+
+      <!-- BANNER HEADER KELOLA PUSTAKAWAN -->
+      <div class="bg-slate-950 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
+        <div class="space-y-2 max-w-xl z-10">
+          <span class="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold rounded-full uppercase tracking-wider">
+            Area Terproteksi Admin Perpustakaan
+          </span>
+          <h1 class="text-2xl md:text-3xl font-black tracking-tight">Dashboard Pustakawan & Analitik</h1>
+          <p class="text-xs text-slate-400 leading-relaxed font-medium">
+            Kelola data buku, stiker QR, serta pantau konversi minat baca siswa secara realtime.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 z-10 w-full md:w-auto">
+          <button onclick="openBookModal()" class="flex-1 md:flex-initial px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95">
             <i data-lucide="plus" class="w-4 h-4"></i> Tambah Buku Baru
           </button>
+          <button onclick="handleLogout()" class="px-4 py-3 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+          </button>
+        </div>
+      </div>
+
+      <!-- KARTU STATISTIK RINGKASAN DATA (METRICS CARD) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Total Buku Teaser</p>
+            <h3 id="stat-total-books" class="text-3xl font-black text-slate-900 mt-1">4</h3>
+            <p class="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
+              <i data-lucide="trending-up" class="w-3 h-3"></i> Aktif di Rak
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+            <i data-lucide="book-open" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Scan Engagement Rate</p>
+            <h3 id="stat-total-scans" class="text-3xl font-black text-slate-900 mt-1">140</h3>
+            <p class="text-[11px] font-bold text-indigo-600 flex items-center gap-1 mt-1">
+              <i data-lucide="qr-code" class="w-3 h-3"></i> Total Pemindaian
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0">
+            <i data-lucide="scan-line" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ulasan Siswa</p>
+            <h3 id="stat-total-reviews" class="text-3xl font-black text-slate-900 mt-1">3</h3>
+            <p class="text-[11px] font-bold text-pink-600 flex items-center gap-1 mt-1">
+              <i data-lucide="message-square" class="w-3 h-3"></i> Feedback Terkumpul
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center shrink-0">
+            <i data-lucide="message-circle" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Buku Terpopuler</p>
+            <h3 id="stat-popular-book" class="text-sm font-black text-slate-900 mt-1 line-clamp-1">Laskar Pelangi</h3>
+            <p class="text-[11px] font-bold text-amber-600 flex items-center gap-1 mt-1">
+              <i data-lucide="trophy" class="w-3 h-3"></i> Paling Banyak Di-scan
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shrink-0">
+            <i data-lucide="award" class="w-6 h-6"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIAGRAM BATANG ANALITIK SCAN PER BUKU -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-600"></i>
+            <h3 class="text-base font-black text-slate-900">Analitik Performa Scan Engagement Per Buku</h3>
+          </div>
+          <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg">Realtime Data</span>
+        </div>
+        <div class="relative w-full h-72">
+          <canvas id="scanChart"></canvas>
+        </div>
+      </div>
+
+      <!-- TAB KELOLA BUKU DATA TABLE -->
+      <div id="tab-books" class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-black text-slate-900 tracking-tight">Katalog Buku Aktif</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Atur informasi buku, lokasi rak, serta buat stiker QR code</p>
+          </div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -103,7 +197,7 @@
                 </tr>
               </thead>
               <tbody id="admin-books-table" class="divide-y divide-slate-100">
-                <!-- Baris buku dimuat dinamis -->
+                <!-- Baris buku dimuat dinamis oleh admin.js -->
               </tbody>
             </table>
           </div>
@@ -111,10 +205,10 @@
       </div>
 
       <!-- TAB MODERASI REVIEW -->
-      <div id="tab-reviews" class="hidden">
-        <div class="mb-6">
-          <h2 class="text-2xl font-black text-slate-900 tracking-tight">Moderasi Ulasan Siswa</h2>
-          <p class="text-xs text-slate-500 mt-1">Tinjau dan setujui ulasan yang masuk dari para pembaca</p>
+      <div id="tab-reviews" class="hidden space-y-4">
+        <div>
+          <h2 class="text-xl font-black text-slate-900 tracking-tight">Moderasi Ulasan Siswa</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Tinjau dan setujui ulasan yang masuk dari para pembaca</p>
         </div>
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
@@ -129,16 +223,17 @@
                 </tr>
               </thead>
               <tbody id="admin-reviews-table" class="divide-y divide-slate-100">
-                <!-- Baris ulasan dimuat dinamis -->
+                <!-- Baris ulasan dimuat dinamis oleh admin.js -->
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
     </main>
   </div>
 
-  <!-- Modal Tambah / Edit Buku -->
+  <!-- MODAL TAMBAH / EDIT BUKU -->
   <div id="admin-book-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
       <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
@@ -180,8 +275,8 @@
           <textarea id="form-desc" rows="3" placeholder="Ringkasan singkat tentang isi buku..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all resize-none"></textarea>
         </div>
         <div>          
-        <label class="block text-xs font-bold text-slate-700 mb-1">Link Video Review / Teaser</label>
-        <input type="url" id="form-video" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-4 py-2 text-sm border rounded-xl">
+          <label class="block text-xs font-bold text-slate-700 mb-1">Link Video Review / Teaser (YouTube, TikTok, Instagram)</label>
+          <input type="url" id="form-video" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
         </div>
           
         <div class="pt-3 border-t border-slate-100 space-y-2.5">
@@ -225,6 +320,43 @@
     document.addEventListener("DOMContentLoaded", () => {
       if (window.lucide) {
         lucide.createIcons();
+      }
+
+      // SKRIP INSISIALISASI CHART ANALITIK
+      const ctx = document.getElementById('scanChart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Laskar Pelangi', 'Penjelajah Anta...', 'Jejak Sang Prok...', 'Laut Bercerita'],
+            datasets: [{
+              label: 'Jumlah Pemindaian QR',
+              data: [47, 32, 24, 37],
+              backgroundColor: '#6366f1',
+              borderRadius: 8,
+              borderSkipped: false,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 50,
+                grid: { color: '#f1f5f9' },
+                ticks: { font: { size: 10 } }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 10, weight: 'bold' } }
+              }
+            }
+          }
+        });
       }
     });
   </script>
