@@ -239,6 +239,12 @@ function editBook(book) {
     document.getElementById("form-desc").value = book.description || "";
   }
 
+  // Isi data input video saat edit
+  const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
+  if (videoInput) {
+    videoInput.value = book.video_url || "";
+  }
+
   document.getElementById("form-ch1").value = book.chapter_1_url || "";
   document.getElementById("form-ch2").value = book.chapter_2_url || "";
   document.getElementById("form-ch3").value = book.chapter_3_url || "";
@@ -260,6 +266,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const submitBtn = bookForm.querySelector("button[type='submit']");
       if (submitBtn) submitBtn.disabled = true;
 
+      // Deteksi elemen input link video
+      const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
+      const videoValue = videoInput ? videoInput.value.trim() : "";
+
       const bookData = {
         title: document.getElementById("form-title").value,
         author: document.getElementById("form-author").value,
@@ -268,11 +278,10 @@ document.addEventListener("DOMContentLoaded", () => {
         category: document.getElementById("form-category").value,
         cover_url: document.getElementById("form-cover").value,
         description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
+        video_url: videoValue || null, // Mengirimkan ke nama kolom resmi Supabase
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
-        chapter_3_url: document.getElementById("form-ch3").value || null,
-        url_video: document.getElementById("form-ch3").value || null,
-        
+        chapter_3_url: document.getElementById("form-ch3").value || null
       };
 
       let response;
@@ -306,7 +315,6 @@ function generateQr(bookId, bookTitle) {
   qrContainer.innerHTML = "";
   if (titleElem) titleElem.textContent = bookTitle;
 
-  // Dapatkan URL dasar aplikasi (bekerja baik di local maupun domain GitHub Pages)
   const currentUrl = window.location.href;
   const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
   const targetUrl = `${baseUrl}/preview.html?id=${bookId}`;
