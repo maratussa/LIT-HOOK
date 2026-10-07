@@ -66,6 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 2. HANDLER SUBMIT FORM BUKU (TAMBAH / EDIT BUKU)
+  // 2. HANDLER SUBMIT FORM BUKU (TAMBAH / EDIT BUKU)
   const bookForm = document.getElementById("book-form");
   if (bookForm) {
     bookForm.addEventListener("submit", async (e) => {
@@ -86,8 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         category: document.getElementById("form-category").value,
         cover_url: document.getElementById("form-cover").value,
         description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
-        video_url: videoValue, // Tersimpan ke kolom video_url
-        url_video: videoValue, // Tersimpan ke kolom url_video (kompatibilitas ganda)
+        video_url: videoValue, // Hanya mengirimkan nama kolom yang terdaftar di Supabase
         chapter_1_url: document.getElementById("form-ch1").value || null,
         chapter_2_url: document.getElementById("form-ch2").value || null,
         chapter_3_url: document.getElementById("form-ch3").value || null
@@ -111,7 +111,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   }
-});
 
 // Verifikasi Hak Akses & Tampilkan Dashboard
 async function checkAdminRole(userId) {
