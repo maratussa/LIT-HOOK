@@ -1,3 +1,6 @@
+Berikut adalah skrip lengkap **`admin.js`** yang sudah diperbaiki secara menyeluruh:
+
+```javascript
 // Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
@@ -109,37 +112,67 @@ function switchTab(tabName) {
   }
 }
 
-// Load Ringkasan Data Statistik & Chart
+// Load Ringkasan Data Statistik & Chart secara Realtime dari Supabase
 async function loadDashboardStats() {
   try {
-    // 1. Total Buku
-    const { count: bookCount } = await supabaseClient.from("books").select("*", { count: "exact", head: true });
+    // 1. Total Buku Teaser
+    const { count: bookCount } = await supabaseClient
+      .from("books")
+      .select("*", { count: "exact", head: true });
+
     const statBooks = document.getElementById("stat-total-books");
     if (statBooks) statBooks.textContent = bookCount || 0;
 
-    // 2. Total Ulasan
-    const { count: reviewCount } = await supabaseClient.from("reviews").select("*", { count: "exact", head: true });
+    // 2. Total Ulasan Siswa
+    const { count: reviewCount } = await supabaseClient
+      .from("reviews")
+      .select("*", { count: "exact", head: true });
+
     const statReviews = document.getElementById("stat-total-reviews");
     if (statReviews) statReviews.textContent = reviewCount || 0;
 
-    // 3. Load Data untuk Diagram Scan
-    const { data: books } = await supabaseClient.from("books").select("title, scan_count").order("created_at", { ascending: false });
+    // 3. Ambil Data Buku dan Pemindaian Realtime dari Database
+    const { data: books, error } = await supabaseClient
+      .from("books")
+      .select("title, scan_count")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Gagal memuat data statistik scan:", error.message);
+      return;
+    }
 
     if (books && books.length > 0) {
+      // Label Nama Buku (Dipotong jika terlalu panjang)
       const labels = books.map(b => b.title.length > 15 ? b.title.substring(0, 15) + "..." : b.title);
-      const scanData = books.map(b => b.scan_count || Math.floor(Math.random() * 30) + 10);
+      
+      // Ambil angka scan_count murni dari database (0 jika null)
+      const scanData = books.map(b => Number(b.scan_count) || 0);
 
-      // Hitung Total Scan
-      const totalScans = scanData.reduce((a, b) => a + b, 0);
+      // Hitung Total Scan Engagement
+      const totalScans = scanData.reduce((acc, curr) => acc + curr, 0);
       const statScans = document.getElementById("stat-total-scans");
       if (statScans) statScans.textContent = totalScans;
 
-      // Set Buku Terpopuler
-      const maxScanIdx = scanData.indexOf(Math.max(...scanData));
-      const statPop = document.getElementById("stat-popular-book");
-      if (statPop && books[maxScanIdx]) statPop.textContent = books[maxMaxIdx ? maxMaxIdx : maxScanIdx].title;
+      // Cari Buku Terpopuler
+      let maxScan = -1;
+      let popularTitle = "-";
 
+      books.forEach(b => {
+        const count = Number(b.scan_count) || 0;
+        if (count > maxScan) {
+          maxScan = count;
+          popularTitle = b.title;
+        }
+      });
+
+      const statPop = document.getElementById("stat-popular-book");
+      if (statPop) statPop.textContent = popularTitle;
+
+      // Render Ulang Diagram Chart.js
       renderChart(labels, scanData);
+    } else {
+      renderChart([], []);
     }
   } catch (err) {
     console.error("Gagal memuat statistik:", err);
@@ -151,9 +184,13 @@ function renderChart(labels, data) {
   const ctx = document.getElementById("scanChart");
   if (!ctx) return;
 
+  // Hapus instance chart lama agar tidak bertumpuk
   if (scanChartInstance) {
     scanChartInstance.destroy();
   }
+
+  const maxVal = data.length > 0 ? Math.max(...data) : 10;
+  const suggestedMaxY = maxVal < 10 ? 10 : Math.ceil(maxVal * 1.2);
 
   scanChartInstance = new Chart(ctx, {
     type: "bar",
@@ -171,13 +208,21 @@ function renderChart(labels, data) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: false }
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Total Scan: ${context.parsed.y} kali`;
+            }
+          }
+        }
       },
       scales: {
         y: {
           beginAtZero: true,
+          suggestedMax: suggestedMaxY,
           grid: { color: "#f1f5f9" },
-          ticks: { font: { size: 10 } }
+          ticks: { stepSize: 1, font: { size: 10 } }
         },
         x: {
           grid: { display: false },
@@ -188,7 +233,7 @@ function renderChart(labels, data) {
   });
 }
 
-// Load Data Buku
+// Load Data Buku ke Tabel
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -247,7 +292,7 @@ async function loadBooks() {
   if (window.lucide) lucide.createIcons();
 }
 
-// Load Ulasan Siswa
+// Load Ulasan Siswa ke Tabel
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
   if (!tableBody) return;
@@ -285,7 +330,7 @@ async function loadReviews() {
   });
 }
 
-// Modal Form Buku
+// Modal Form Tambah Buku Baru
 function openBookModal() {
   editingBookId = null;
   const modal = document.getElementById("admin-book-modal");
@@ -305,6 +350,7 @@ function closeBookModal() {
   if (form) form.reset();
 }
 
+// Modal Form Edit Buku
 function editBook(book) {
   editingBookId = book.id;
 
@@ -335,6 +381,7 @@ function editBook(book) {
   if (modal) modal.classList.remove("hidden");
 }
 
+// Submit Listener Form Tambah/Edit Buku
 document.addEventListener("DOMContentLoaded", () => {
   const bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -382,6 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// Modal Cetak QR Code
 function generateQr(bookId, bookTitle) {
   const qrModal = document.getElementById("qr-modal");
   const qrContainer = document.getElementById("qrcode");
@@ -410,6 +458,7 @@ function closeQrModal() {
   if (qrModal) qrModal.classList.add("hidden");
 }
 
+// Hapus Buku
 async function deleteBook(bookId) {
   if (!confirm("Apakah Anda yakin ingin menghapus buku ini?")) return;
 
@@ -422,6 +471,7 @@ async function deleteBook(bookId) {
   }
 }
 
+// Approval Ulasan Siswa
 async function toggleApproveReview(reviewId, status) {
   const { error } = await supabaseClient.from("reviews").update({ is_approved: status }).eq("id", reviewId);
   if (error) {
@@ -431,6 +481,7 @@ async function toggleApproveReview(reviewId, status) {
   }
 }
 
+// Tampilkan Pesan Error Login
 function showError(msg) {
   if (loginError) {
     loginError.textContent = msg;
@@ -439,3 +490,4 @@ function showError(msg) {
     alert(msg);
   }
 }
+
