@@ -182,9 +182,9 @@
             </div>
           </div>
 
-          <!-- 2. WIDGET VIDEO TRAILER -->
+          <!-- 2. WIDGET VIDEO TRAILER MULTI-PLATFORM -->
           <div id="view-video" class="hidden bg-slate-950 rounded-2xl overflow-hidden min-h-[350px] flex items-center justify-center">
-            <iframe id="video-iframe" class="w-full h-80 sm:h-96 rounded-2xl" src="" title="Video Trailer Buku" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <iframe id="video-iframe" class="w-full h-80 sm:h-96 rounded-2xl" src="" title="Video Trailer Buku" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             <div id="video-empty" class="hidden text-center p-8 text-slate-400">
               <i data-lucide="video-off" class="w-10 h-10 mx-auto mb-2 text-slate-600"></i>
               <p class="text-xs font-bold">Video trailer belum diunggah untuk buku ini.</p>
@@ -315,13 +315,68 @@
     let teaserSlides = [];
     let currentSlideIdx = 0;
 
+    // HELPER 1: DIRECT LINK GAMBAR GOOGLE DRIVE
+    function formatDriveUrl(url) {
+      if (!url) return "";
+      let driveUrl = url.trim();
+      if (driveUrl.includes("drive.google.com")) {
+        const match = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || driveUrl.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+      }
+      return driveUrl;
+    }
+
+    // HELPER 2: EMBED PLAYER KONVERTER MULTI-PLATFORM (YOUTUBE, TIKTOK, INSTAGRAM, DRIVE)
+    function formatVideoEmbedUrl(url) {
+      if (!url) return "";
+      let videoUrl = url.trim();
+
+      // 1. YouTube (watch?v=, youtu.be/, /shorts/, atau /embed/)
+      if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
+        let videoId = "";
+        if (videoUrl.includes("youtu.be/")) {
+          videoId = videoUrl.split("youtu.be/")[1].split("?")[0].split("&")[0];
+        } else if (videoUrl.includes("watch?v=")) {
+          videoId = videoUrl.split("watch?v=")[1].split("&")[0];
+        } else if (videoUrl.includes("/shorts/")) {
+          videoId = videoUrl.split("/shorts/")[1].split("?")[0].split("&")[0];
+        } else if (videoUrl.includes("/embed/")) {
+          return videoUrl;
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : videoUrl;
+      }
+
+      // 2. TikTok (video/123456789)
+      if (videoUrl.includes("tiktok.com")) {
+        const match = videoUrl.match(/\/video\/(\d+)/);
+        if (match && match[1]) {
+          return `https://www.tiktok.com/player/v1/${match[1]}?autoplay=0`;
+        }
+      }
+
+      // 3. Instagram (Reels atau Posts: /reel/CODE/ atau /p/CODE/)
+      if (videoUrl.includes("instagram.com")) {
+        let cleanUrl = videoUrl.split("?")[0];
+        if (!cleanUrl.endsWith("/")) cleanUrl += "/";
+        return `${cleanUrl}embed/`;
+      }
+
+      // 4. Google Drive Video
+      if (videoUrl.includes("drive.google.com")) {
+        return videoUrl.replace(/\/view.*$/, "/preview");
+      }
+
+      return videoUrl;
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
       if (window.lucide) lucide.createIcons();
 
       const urlParams = new URLSearchParams(window.location.search);
       currentBookId = urlParams.get("id");
 
-      // Jika URL dibuka tanpa parameter ?id=
       if (!currentBookId) {
         console.warn("URL dibuka tanpa parameter ?id=");
         showError();
@@ -340,7 +395,6 @@
           .eq("id", id)
           .maybeSingle();
 
-        // Pastikan spinner loading disembunyikan
         document.getElementById("loading-state").classList.add("hidden");
 
         if (error || !book) {
@@ -351,7 +405,8 @@
 
         document.getElementById("book-content").classList.remove("hidden");
 
-        document.getElementById("book-cover").src = book.cover_url || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80";
+        // Format Gambar Cover
+        document.getElementById("book-cover").src = formatDriveUrl(book.cover_url) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80";
         document.getElementById("book-badge").textContent = book.category || "Fiksi";
         document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
         document.getElementById("book-author").textContent = `Oleh: ${book.author || "Anonim"}`;
@@ -363,26 +418,30 @@
         document.getElementById("book-shelf-full").textContent = locationFull;
         document.getElementById("stopping-shelf").textContent = locationFull;
 
-        // Slide Komik
+        // Slide Komik Teaser
         teaserSlides = [
-          { url: book.chapter_1_url, caption: "Bab 1: Masa muda Bung Karno dan perdebatan pemuda di Rengasdengklok." },
-          { url: book.chapter_2_url, caption: "Bab 2: Detik-detik perumusan naskah proklamasi." },
-          { url: book.chapter_3_url, caption: "Bab 3: Pembacaan teks proklamasi kemerdekaan RI." }
+          { url: formatDriveUrl(book.chapter_1_url), caption: "Bab 1: Cuplikan bagian awal cerita." },
+          { url: formatDriveUrl(book.chapter_2_url), caption: "Bab 2: Konflik mulai memuncak." },
+          { url: formatDriveUrl(book.chapter_3_url), caption: "Bab 3: Bagian klimaks sebelum menggantung." }
         ].filter(s => s.url && s.url.trim() !== "");
 
         if (teaserSlides.length > 0) {
           updateSlide();
+        } else {
+          document.getElementById("teaser-image").src = "https://placehold.co/800x600?text=Gambar+Teaser+Belum+Tersedia";
+          document.getElementById("teaser-caption").textContent = "Belum ada gambar cuplikan untuk buku ini.";
         }
 
-        // Embed Video Trailer
+        // EMBED VIDEO TRAILER MULTI-PLATFORM
         const videoIframe = document.getElementById("video-iframe");
         const videoEmpty = document.getElementById("video-empty");
-        if (book.video_url && book.video_url.trim() !== "") {
-          let embedUrl = book.video_url;
-          if (embedUrl.includes("watch?v=")) {
-            embedUrl = embedUrl.replace("watch?v=", "embed/");
-          }
-          videoIframe.src = embedUrl;
+        const rawVideoUrl = book.video_url || book.url_video;
+
+        if (rawVideoUrl && rawVideoUrl.trim() !== "") {
+          const finalEmbedUrl = formatVideoEmbedUrl(rawVideoUrl);
+          videoIframe.src = finalEmbedUrl;
+          videoIframe.classList.remove("hidden");
+          videoEmpty.classList.add("hidden");
         } else {
           videoIframe.classList.add("hidden");
           videoEmpty.classList.remove("hidden");
@@ -533,91 +592,6 @@
       document.getElementById("error-state").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
     }
-    // FUNGSI CONVERTER LINK GOOGLE DRIVE KE DIRECT LINK GAMBAR
-    function formatDriveUrl(url) {
-      if (!url) return "";
-      let driveUrl = url.trim();
-
-      // Cek apakah link berasal dari Google Drive
-      if (driveUrl.includes("drive.google.com")) {
-        // Ambil File ID menggunakan Regular Expression
-        const match = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || driveUrl.match(/id=([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          const fileId = match[1];
-          // Format direct image yang kompatibel dengan tag <img>
-          return `https://lh3.googleusercontent.com/d/${fileId}`;
-        }
-      }
-      return driveUrl; // Jika bukan google drive, pakai link asli
-    }
-
-    async function loadBookData(id) {
-      try {
-        const { data: book, error } = await supabaseClient
-          .from("books")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
-
-        document.getElementById("loading-state").classList.add("hidden");
-
-        if (error || !book) {
-          console.error("Gagal memuat data buku:", error);
-          showError();
-          return;
-        }
-
-        document.getElementById("book-content").classList.remove("hidden");
-
-        // Format link cover
-        document.getElementById("book-cover").src = formatDriveUrl(book.cover_url) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80";
-        document.getElementById("book-badge").textContent = book.category || "Fiksi";
-        document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
-        document.getElementById("book-author").textContent = `Oleh: ${book.author || "Anonim"}`;
-        document.getElementById("book-desc").textContent = book.description || "Belum ada ringkasan sinopsis untuk buku ini.";
-
-        const locationFull = `Rak ${book.shelf_location || '-'} (Kode DDC ${book.ddc_code || '-'})`;
-        document.getElementById("book-ddc").textContent = `DDC : ${book.ddc_code || '-'}`;
-        document.getElementById("book-shelf").textContent = `Rak ${book.shelf_location || '-'}`;
-        document.getElementById("book-shelf-full").textContent = locationFull;
-        document.getElementById("stopping-shelf").textContent = locationFull;
-
-        // Slide Komik (Sudah dikonversi otomatis lewat formatDriveUrl)
-        teaserSlides = [
-          { url: formatDriveUrl(book.chapter_1_url), caption: "Bab 1: Cuplikan bagian awal cerita." },
-          { url: formatDriveUrl(book.chapter_2_url), caption: "Bab 2: Konflik mulai memuncak." },
-          { url: formatDriveUrl(book.chapter_3_url), caption: "Bab 3: Bagian klimaks sebelum menggantung." }
-        ].filter(s => s.url && s.url.trim() !== "");
-
-        if (teaserSlides.length > 0) {
-          updateSlide();
-        } else {
-          document.getElementById("teaser-image").src = "https://placehold.co/800x600?text=Gambar+Teaser+Belum+Tersedia";
-          document.getElementById("teaser-caption").textContent = "Belum ada gambar cuplikan untuk buku ini.";
-        }
-
-        // Embed Video Trailer
-        const videoIframe = document.getElementById("video-iframe");
-        const videoEmpty = document.getElementById("video-empty");
-        if (book.video_url && book.video_url.trim() !== "") {
-          let embedUrl = book.video_url;
-          if (embedUrl.includes("watch?v=")) {
-            embedUrl = embedUrl.replace("watch?v=", "embed/");
-          }
-          videoIframe.src = embedUrl;
-        } else {
-          videoIframe.classList.add("hidden");
-          videoEmpty.classList.remove("hidden");
-        }
-
-        if (window.lucide) lucide.createIcons();
-      } catch (err) {
-        console.error("Terjadi kesalahan:", err);
-        showError();
-      }
-    }
-
-    
   </script>
 </body>
 </html>
