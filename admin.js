@@ -3,98 +3,61 @@ const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let editingBookId = null;
 
-// Jalankan event listener saat DOM siap
-document.addEventListener("DOMContentLoaded", async () => {
-  // Cek Sesi Tersimpan
+// Element DOM Utama
+const loginForm = document.getElementById("loginForm");
+const loginSection = document.getElementById("loginSection");
+const adminDashboard = document.getElementById("adminDashboard");
+const loginError = document.getElementById("loginError");
+
+// Cek Sesi Saat Halaman Dimuat
+window.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    showDashboard();
-  }
-
-  // 1. HANDLER LOGIN ADMIN
-  const loginForm = document.getElementById("loginForm");
-  if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const emailInput = document.getElementById("email");
-      const passwordInput = document.getElementById("password");
-      const loginError = document.getElementById("loginError");
-
-      if (loginError) loginError.classList.add("hidden");
-
-      const email = emailInput ? emailInput.value.trim() : "";
-      const password = passwordInput ? passwordInput.value : "";
-
-      // Proses Login Supabase Auth
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        showError("Login Gagal: " + error.message);
-        return;
-      }
-
-      if (data && data.user) {
-        showDashboard();
-      }
-    });
-  }
-
-  // 2. HANDLER SUBMIT FORM BUKU (TAMBAH / EDIT BUKU)
-  const bookForm = document.getElementById("book-form");
-  if (bookForm) {
-    bookForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const submitBtn = bookForm.querySelector("button[type='submit']");
-      if (submitBtn) submitBtn.disabled = true;
-
-      // Ambil elemen input video
-      const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
-      const videoValue = videoInput ? videoInput.value.trim() : "";
-
-      // HANYA MENGIRIMKAN KOLOM YANG TERDAFTAR DI SUPABASE
-      const bookData = {
-        title: document.getElementById("form-title").value,
-        author: document.getElementById("form-author").value,
-        ddc_code: document.getElementById("form-ddc").value,
-        shelf_location: document.getElementById("form-shelf").value,
-        category: document.getElementById("form-category").value,
-        cover_url: document.getElementById("form-cover").value,
-        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
-        video_url: videoValue,
-        chapter_1_url: document.getElementById("form-ch1").value || null,
-        chapter_2_url: document.getElementById("form-ch2").value || null,
-        chapter_3_url: document.getElementById("form-ch3").value || null
-      };
-
-      let response;
-      if (editingBookId) {
-        response = await supabaseClient.from("books").update(bookData).eq("id", editingBookId);
-      } else {
-        response = await supabaseClient.from("books").insert([bookData]);
-      }
-
-      if (submitBtn) submitBtn.disabled = false;
-
-      if (response.error) {
-        alert("Gagal menyimpan data: " + response.error.message);
-      } else {
-        alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
-        closeBookModal();
-        loadBooks();
-      }
-    });
+    await checkAdminRole(session.user.id);
   }
 });
 
-// Fungsi Menampilkan Dashboard Admin
-function showDashboard() {
+// Form Submit Handler (Login)
+if (loginForm) {
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (loginError) loginError.classList.add("hidden");
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      showError(error.message);
+      return;
+    }
+
+    if (data && data.user) {
+      await checkAdminRole(data.user.id);
+    }
+  });
+}
+
+// Verifikasi Hak Akses Admin & Buka Dashboard
+async function checkAdminRole(userId) {
+  const { data, error } = await supabaseClient
+    .from("admin_profiles")
+    .select("role")
+    .eq("auth_user_id", userId)
+    .single();
+
+  if (error || !data || data.role !== "admin") {
+    showError("Akses Ditolak: Anda bukan administrator.");
+    return;
+  }
+
   const targetLogin = document.getElementById("loginSection");
   const targetDashboard = document.getElementById("adminDashboard");
 
@@ -134,17 +97,17 @@ function switchTab(tabName) {
   if (tabName === "books") {
     if (tabBooks) tabBooks.classList.remove("hidden");
     if (tabReviews) tabReviews.classList.add("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
+    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white text-left font-semibold";
+    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white text-left transition font-semibold";
   } else if (tabName === "reviews") {
     if (tabBooks) tabBooks.classList.add("hidden");
     if (tabReviews) tabReviews.classList.remove("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition text-left";
+    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white text-left transition font-semibold";
+    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white text-left font-semibold";
   }
 }
 
-// Load Data Buku
+// Load Data Buku & Tampilkan Tombol Edit + QR Code
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -203,7 +166,7 @@ async function loadBooks() {
   if (window.lucide) lucide.createIcons();
 }
 
-// Load Review
+// Load Ulasan Siswa
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
   if (!tableBody) return;
@@ -241,7 +204,7 @@ async function loadReviews() {
   });
 }
 
-// Modal Form Tambah Buku
+// Buka & Tutup Modal Buku
 function openBookModal() {
   editingBookId = null;
   const modal = document.getElementById("admin-book-modal");
@@ -261,7 +224,7 @@ function closeBookModal() {
   if (form) form.reset();
 }
 
-// Modal Form Edit Buku
+// Buka Modal Mode Edit Data
 function editBook(book) {
   editingBookId = book.id;
 
@@ -273,4 +236,120 @@ function editBook(book) {
   document.getElementById("form-cover").value = book.cover_url || "";
   
   if (document.getElementById("form-desc")) {
-    document.
+    document.getElementById("form-desc").value = book.description || "";
+  }
+
+  document.getElementById("form-ch1").value = book.chapter_1_url || "";
+  document.getElementById("form-ch2").value = book.chapter_2_url || "";
+  document.getElementById("form-ch3").value = book.chapter_3_url || "";
+
+  const modalTitle = document.getElementById("modal-title");
+  if (modalTitle) modalTitle.textContent = "Edit Data Buku";
+
+  const modal = document.getElementById("admin-book-modal");
+  if (modal) modal.classList.remove("hidden");
+}
+
+// Submit Form (Tambah / Edit)
+document.addEventListener("DOMContentLoaded", () => {
+  const bookForm = document.getElementById("book-form");
+  if (bookForm) {
+    bookForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const submitBtn = bookForm.querySelector("button[type='submit']");
+      if (submitBtn) submitBtn.disabled = true;
+
+      const bookData = {
+        title: document.getElementById("form-title").value,
+        author: document.getElementById("form-author").value,
+        ddc_code: document.getElementById("form-ddc").value,
+        shelf_location: document.getElementById("form-shelf").value,
+        category: document.getElementById("form-category").value,
+        cover_url: document.getElementById("form-cover").value,
+        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
+        chapter_1_url: document.getElementById("form-ch1").value || null,
+        chapter_2_url: document.getElementById("form-ch2").value || null,
+        chapter_3_url: document.getElementById("form-ch3").value || null,
+        url_video: document.getElementById("form-ch3").value || null,
+        
+      };
+
+      let response;
+      if (editingBookId) {
+        response = await supabaseClient.from("books").update(bookData).eq("id", editingBookId);
+      } else {
+        response = await supabaseClient.from("books").insert([bookData]);
+      }
+
+      if (submitBtn) submitBtn.disabled = false;
+
+      if (response.error) {
+        alert("Gagal menyimpan data: " + response.error.message);
+      } else {
+        alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
+        closeBookModal();
+        loadBooks();
+      }
+    });
+  }
+});
+
+// Generate QR Code Berbentuk URL Web Lengkap
+function generateQr(bookId, bookTitle) {
+  const qrModal = document.getElementById("qr-modal");
+  const qrContainer = document.getElementById("qrcode");
+  const titleElem = document.getElementById("qr-book-title");
+
+  if (!qrModal || !qrContainer) return;
+
+  qrContainer.innerHTML = "";
+  if (titleElem) titleElem.textContent = bookTitle;
+
+  // Dapatkan URL dasar aplikasi (bekerja baik di local maupun domain GitHub Pages)
+  const currentUrl = window.location.href;
+  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+  const targetUrl = `${baseUrl}/preview.html?id=${bookId}`;
+
+  new QRCode(qrContainer, {
+    text: targetUrl,
+    width: 180,
+    height: 180,
+  });
+
+  qrModal.classList.remove("hidden");
+}
+
+function closeQrModal() {
+  const qrModal = document.getElementById("qr-modal");
+  if (qrModal) qrModal.classList.add("hidden");
+}
+
+async function deleteBook(bookId) {
+  if (!confirm("Apakah Anda yakin ingin menghapus buku ini?")) return;
+
+  const { error } = await supabaseClient.from("books").delete().eq("id", bookId);
+  if (error) {
+    alert("Gagal menghapus buku: " + error.message);
+  } else {
+    loadBooks();
+  }
+}
+
+async function toggleApproveReview(reviewId, status) {
+  const { error } = await supabaseClient.from("reviews").update({ is_approved: status }).eq("id", reviewId);
+  if (error) {
+    alert("Gagal memperbarui ulasan: " + error.message);
+  } else {
+    loadReviews();
+  }
+}
+
+function showError(msg) {
+  if (loginError) {
+    loginError.textContent = msg;
+    loginError.classList.remove("hidden");
+  } else {
+    alert(msg);
+  }
+}
