@@ -68,7 +68,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  const bookForm = document.getElementById("book-form");
+
+  //INPUT BUKU
+const bookForm = document.getElementById("book-form");
   if (bookForm) {
     bookForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -76,8 +78,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       const submitBtn = bookForm.querySelector("button[type='submit']");
       if (submitBtn) submitBtn.disabled = true;
 
-      const videoInput = document.getElementById("form-video") || document.getElementById("book-video-url");
-      const videoValue = videoInput ? videoInput.value.trim() : "";
+      // Ambil nilai dari semua kemungkinan ID elemen input video
+      const videoEl = document.getElementById("form-video") || 
+                      document.getElementById("book-video-url") || 
+                      document.querySelector("input[name='video_url']");
+                      
+      const videoValue = videoEl ? videoEl.value.trim() : "";
 
       const bookData = {
         title: document.getElementById("form-title").value,
@@ -87,10 +93,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         category: document.getElementById("form-category").value,
         cover_url: document.getElementById("form-cover").value,
         description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
-        video_url: videoValue,
-        chapter_1_url: document.getElementById("form-ch1").value || null,
-        chapter_2_url: document.getElementById("form-ch2").value || null,
-        chapter_3_url: document.getElementById("form-ch3").value || null
+        video_url: videoValue, // Menyimpan nilai video
+        chapter_1_url: document.getElementById("form-ch1") ? document.getElementById("form-ch1").value || null : null,
+        chapter_2_url: document.getElementById("form-ch2") ? document.getElementById("form-ch2").value || null : null,
+        chapter_3_url: document.getElementById("form-ch3") ? document.getElementById("form-ch3").value || null : null
       };
 
       let response;
@@ -111,7 +117,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   }
-});
+
+
 
 function showDashboard() {
   const targetLogin = document.getElementById("loginSection");
