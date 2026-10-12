@@ -1,4 +1,3 @@
-
 // Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
@@ -13,6 +12,36 @@ const loginForm = document.getElementById("loginForm");
 const loginSection = document.getElementById("loginSection");
 const adminDashboard = document.getElementById("adminDashboard");
 const loginError = document.getElementById("loginError");
+
+// HELPER: Upload File Gambar ke Supabase Storage & Kembalikan Public URL
+async function uploadImageToSupabase(fileInput, bucketName = "book-covers") {
+  const file = fileInput.files[0];
+  if (!file) return null;
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+  const filePath = `uploads/${fileName}`;
+
+  const { data, error } = await supabaseClient
+    .storage
+    .from(bucketName)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) {
+    console.error("Gagal mengunggah file:", error.message);
+    throw new Error(`Upload error: ${error.message}`);
+  }
+
+  const { data: publicUrlData } = supabaseClient
+    .storage
+    .from(bucketName)
+    .getPublicUrl(filePath);
+
+  return publicUrlData.publicUrl;
+}
 
 // Cek Sesi Saat Halaman Dimuat
 window.addEventListener("DOMContentLoaded", async () => {
@@ -113,7 +142,6 @@ function switchTab(tabName) {
 // Load Ringkasan Data Statistik & Chart secara Realtime dari Supabase
 async function loadDashboardStats() {
   try {
-    // 1. Total Buku Teaser
     const { count: bookCount } = await supabaseClient
       .from("books")
       .select("*", { count: "exact", head: true });
@@ -121,7 +149,6 @@ async function loadDashboardStats() {
     const statBooks = document.getElementById("stat-total-books");
     if (statBooks) statBooks.textContent = bookCount || 0;
 
-    // 2. Total Ulasan Siswa
     const { count: reviewCount } = await supabaseClient
       .from("reviews")
       .select("*", { count: "exact", head: true });
@@ -129,7 +156,6 @@ async function loadDashboardStats() {
     const statReviews = document.getElementById("stat-total-reviews");
     if (statReviews) statReviews.textContent = reviewCount || 0;
 
-    // 3. Ambil Data Buku dan Pemindaian Realtime dari Database
     const { data: books, error } = await supabaseClient
       .from("books")
       .select("title, scan_count")
@@ -141,18 +167,13 @@ async function loadDashboardStats() {
     }
 
     if (books && books.length > 0) {
-      // Label Nama Buku (Dipotong jika terlalu panjang)
       const labels = books.map(b => b.title.length > 15 ? b.title.substring(0, 15) + "..." : b.title);
-      
-      // Ambil angka scan_count murni dari database (0 jika null)
       const scanData = books.map(b => Number(b.scan_count) || 0);
 
-      // Hitung Total Scan Engagement
       const totalScans = scanData.reduce((acc, curr) => acc + curr, 0);
       const statScans = document.getElementById("stat-total-scans");
       if (statScans) statScans.textContent = totalScans;
 
-      // Cari Buku Terpopuler
       let maxScan = -1;
       let popularTitle = "-";
 
@@ -167,7 +188,6 @@ async function loadDashboardStats() {
       const statPop = document.getElementById("stat-popular-book");
       if (statPop) statPop.textContent = popularTitle;
 
-      // Render Ulang Diagram Chart.js
       renderChart(labels, scanData);
     } else {
       renderChart([], []);
@@ -182,7 +202,6 @@ function renderChart(labels, data) {
   const ctx = document.getElementById("scanChart");
   if (!ctx) return;
 
-  // Hapus instance chart lama agar tidak bertumpuk
   if (scanChartInstance) {
     scanChartInstance.destroy();
   }
@@ -359,6 +378,14 @@ function editBook(book) {
   document.getElementById("form-category").value = book.category || "";
   document.getElementById("form-cover").value = book.cover_url || "";
   
+  document.getElementById("form-ch1-url-existing").value = book.chapter_1_url || "";
+  document.getElementById("form-ch2-url-existing").value = book.chapter_2_url || "";
+  document.getElementById("form-ch3-url-existing").value = book.chapter_3_url || "";
+
+  document.getElementById("form-ch1-file").value = "";
+  document.getElementById("form-ch2-file").value = "";
+  document.getElementById("form-ch3-file").value = "";
+
   if (document.getElementById("form-desc")) {
     document.getElementById("form-desc").value = book.description || "";
   }
@@ -367,10 +394,6 @@ function editBook(book) {
   if (videoInput) {
     videoInput.value = book.video_url || "";
   }
-
-  document.getElementById("form-ch1").value = book.chapter_1_url || "";
-  document.getElementById("form-ch2").value = book.chapter_2_url || "";
-  document.getElementById("form-ch3").value = book.chapter_3_url || "";
 
   const modalTitle = document.getElementById("modal-title");
   if (modalTitle) modalTitle.textContent = "Edit Data Buku";
@@ -387,41 +410,59 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
 
       const submitBtn = bookForm.querySelector("button[type='submit']");
-      if (submitBtn) submitBtn.disabled = true;
-
-      const videoInput = document.getElementById("form-video");
-      const videoValue = videoInput ? videoInput.value.trim() : "";
-
-      const bookData = {
-        title: document.getElementById("form-title").value,
-        author: document.getElementById("form-author").value,
-        ddc_code: document.getElementById("form-ddc").value,
-        shelf_location: document.getElementById("form-shelf").value,
-        category: document.getElementById("form-category").value,
-        cover_url: document.getElementById("form-cover").value,
-        description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
-        video_url: videoValue || null,
-        chapter_1_url: document.getElementById("form-ch1").value || null,
-        chapter_2_url: document.getElementById("form-ch2").value || null,
-        chapter_3_url: document.getElementById("form-ch3").value || null
-      };
-
-      let response;
-      if (editingBookId) {
-        response = await supabaseClient.from("books").update(bookData).eq("id", editingBookId);
-      } else {
-        response = await supabaseClient.from("books").insert([bookData]);
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Mengunggah Gambar...";
       }
 
-      if (submitBtn) submitBtn.disabled = false;
+      try {
+        const ch1Input = document.getElementById("form-ch1-file");
+        const ch2Input = document.getElementById("form-ch2-file");
+        const ch3Input = document.getElementById("form-ch3-file");
 
-      if (response.error) {
-        alert("Gagal menyimpan data: " + response.error.message);
-      } else {
-        alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
-        closeBookModal();
-        loadBooks();
-        loadDashboardStats();
+        const ch1Url = await uploadImageToSupabase(ch1Input) || document.getElementById("form-ch1-url-existing").value;
+        const ch2Url = await uploadImageToSupabase(ch2Input) || document.getElementById("form-ch2-url-existing").value;
+        const ch3Url = await uploadImageToSupabase(ch3Input) || document.getElementById("form-ch3-url-existing").value;
+
+        const videoInput = document.getElementById("form-video");
+        const videoValue = videoInput ? videoInput.value.trim() : "";
+
+        const bookData = {
+          title: document.getElementById("form-title").value,
+          author: document.getElementById("form-author").value,
+          ddc_code: document.getElementById("form-ddc").value,
+          shelf_location: document.getElementById("form-shelf").value,
+          category: document.getElementById("form-category").value,
+          cover_url: document.getElementById("form-cover").value || null,
+          description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
+          video_url: videoValue || null,
+          chapter_1_url: ch1Url || null,
+          chapter_2_url: ch2Url || null,
+          chapter_3_url: ch3Url || null
+        };
+
+        let response;
+        if (editingBookId) {
+          response = await supabaseClient.from("books").update(bookData).eq("id", editingBookId);
+        } else {
+          response = await supabaseClient.from("books").insert([bookData]);
+        }
+
+        if (response.error) {
+          alert("Gagal menyimpan data: " + response.error.message);
+        } else {
+          alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
+          closeBookModal();
+          loadBooks();
+          loadDashboardStats();
+        }
+      } catch (err) {
+        alert("Terjadi kesalahan saat mengunggah file: " + err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Simpan Buku";
+        }
       }
     });
   }
@@ -488,4 +529,3 @@ function showError(msg) {
     alert(msg);
   }
 }
-
