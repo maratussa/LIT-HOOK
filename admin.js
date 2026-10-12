@@ -1,3 +1,18 @@
+Berikut adalah berkas **`admin.js`** lengkap yang sudah diperbarui secara presisi.
+
+Di dalam berkas ini:
+
+1. Bucket Storage diubah menjadi **`resensi_buku`**.
+
+
+2. Fungsi `uploadImageToSupabase` diperbaiki agar tidak *crash* jika tidak ada file baru yang dipilih.
+
+
+3. Event listener form submit diperbarui dengan blok `try...catch...finally` yang aman agar tombol **Simpan Buku** tidak macet saat diklik.
+
+
+
+```javascript
 // Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
@@ -14,10 +29,12 @@ const adminDashboard = document.getElementById("adminDashboard");
 const loginError = document.getElementById("loginError");
 
 // HELPER: Upload File Gambar ke Supabase Storage & Kembalikan Public URL
-async function uploadImageToSupabase(fileInput, bucketName = "book-covers") {
-  const file = fileInput.files[0];
-  if (!file) return null;
+async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    return null; // Jika tidak ada file yang dipilih, kembalikan null
+  }
 
+  const file = fileInput.files[0];
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
   const filePath = `uploads/${fileName}`;
@@ -32,7 +49,7 @@ async function uploadImageToSupabase(fileInput, bucketName = "book-covers") {
 
   if (error) {
     console.error("Gagal mengunggah file:", error.message);
-    throw new Error(`Upload error: ${error.message}`);
+    throw new Error(`Gagal upload ${file.name}: ${error.message}`);
   }
 
   const { data: publicUrlData } = supabaseClient
@@ -40,7 +57,7 @@ async function uploadImageToSupabase(fileInput, bucketName = "book-covers") {
     .from(bucketName)
     .getPublicUrl(filePath);
 
-  return publicUrlData.publicUrl;
+  return publicUrlData ? publicUrlData.publicUrl : null;
 }
 
 // Cek Sesi Saat Halaman Dimuat
@@ -410,6 +427,8 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
 
       const submitBtn = bookForm.querySelector("button[type='submit']");
+      const originalBtnText = submitBtn ? submitBtn.textContent : "Simpan Buku";
+
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = "Mengunggah Gambar...";
@@ -420,9 +439,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const ch2Input = document.getElementById("form-ch2-file");
         const ch3Input = document.getElementById("form-ch3-file");
 
-        const ch1Url = await uploadImageToSupabase(ch1Input) || document.getElementById("form-ch1-url-existing").value;
-        const ch2Url = await uploadImageToSupabase(ch2Input) || document.getElementById("form-ch2-url-existing").value;
-        const ch3Url = await uploadImageToSupabase(ch3Input) || document.getElementById("form-ch3-url-existing").value;
+        const ch1Exist = document.getElementById("form-ch1-url-existing")?.value || null;
+        const ch2Exist = document.getElementById("form-ch2-url-existing")?.value || null;
+        const ch3Exist = document.getElementById("form-ch3-url-existing")?.value || null;
+
+        const ch1Uploaded = await uploadImageToSupabase(ch1Input);
+        const ch2Uploaded = await uploadImageToSupabase(ch2Input);
+        const ch3Uploaded = await uploadImageToSupabase(ch3Input);
+
+        const ch1Url = ch1Uploaded || ch1Exist;
+        const ch2Url = ch2Uploaded || ch2Exist;
+        const ch3Url = ch3Uploaded || ch3Exist;
 
         const videoInput = document.getElementById("form-video");
         const videoValue = videoInput ? videoInput.value.trim() : "";
@@ -430,15 +457,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const bookData = {
           title: document.getElementById("form-title").value,
           author: document.getElementById("form-author").value,
-          ddc_code: document.getElementById("form-ddc").value,
-          shelf_location: document.getElementById("form-shelf").value,
-          category: document.getElementById("form-category").value,
-          cover_url: document.getElementById("form-cover").value || null,
+          ddc_code: document.getElementById("form-ddc")?.value || null,
+          shelf_location: document.getElementById("form-shelf")?.value || null,
+          category: document.getElementById("form-category")?.value || null,
+          cover_url: document.getElementById("form-cover")?.value || null,
           description: document.getElementById("form-desc") ? document.getElementById("form-desc").value : null,
           video_url: videoValue || null,
-          chapter_1_url: ch1Url || null,
-          chapter_2_url: ch2Url || null,
-          chapter_3_url: ch3Url || null
+          chapter_1_url: ch1Url,
+          chapter_2_url: ch2Url,
+          chapter_3_url: ch3Url
         };
 
         let response;
@@ -449,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (response.error) {
-          alert("Gagal menyimpan data: " + response.error.message);
+          alert("Gagal menyimpan data ke database: " + response.error.message);
         } else {
           alert(editingBookId ? "Buku berhasil diperbarui!" : "Buku berhasil ditambahkan!");
           closeBookModal();
@@ -457,11 +484,12 @@ document.addEventListener("DOMContentLoaded", () => {
           loadDashboardStats();
         }
       } catch (err) {
-        alert("Terjadi kesalahan saat mengunggah file: " + err.message);
+        console.error("Process Error:", err);
+        alert(err.message || "Terjadi kesalahan saat menyimpan buku.");
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = "Simpan Buku";
+          submitBtn.textContent = originalBtnText;
         }
       }
     });
@@ -529,3 +557,5 @@ function showError(msg) {
     alert(msg);
   }
 }
+
+```
