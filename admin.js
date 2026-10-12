@@ -1,18 +1,3 @@
-Berikut adalah berkas **`admin.js`** lengkap yang sudah diperbarui secara presisi.
-
-Di dalam berkas ini:
-
-1. Bucket Storage diubah menjadi **`resensi_buku`**.
-
-
-2. Fungsi `uploadImageToSupabase` diperbaiki agar tidak *crash* jika tidak ada file baru yang dipilih.
-
-
-3. Event listener form submit diperbarui dengan blok `try...catch...finally` yang aman agar tombol **Simpan Buku** tidak macet saat diklik.
-
-
-
-```javascript
 // Konfigurasi Supabase Client
 const SUPABASE_URL = "https://cxjayfxmihczcuhhnszd.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4amF5ZnhtaWhjemN1aGhuc3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExODE5ODIsImV4cCI6MjEwNjc1Nzk4Mn0.q-dJ1nippPUD5T9L3N_NgYNnWGpqiw9-uKZNqScC824";
