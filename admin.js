@@ -7,7 +7,9 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let editingBookId = null;
 let scanChartInstance = null;
 let realtimeSubscription = null;
-let selectedBookIds = new Set();
+
+let allAdminBooks = []; // Array penampung seluruh data buku
+let selectedBookIds = new Set(); // Set penampung ID buku terpilih untuk cetak masal
 
 // HELPER: Upload File Gambar ke Supabase Storage
 async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
@@ -302,11 +304,8 @@ function renderChart(labels, data) {
   });
 }
 
-// LOAD DATA BUKU KE TABEL ADMIN (Dengan Checkbox)
+// LOAD DATA BUKU DARI SUPABASE
 async function loadBooks() {
-  const tableBody = document.getElementById("admin-books-table");
-  if (!tableBody) return;
-
   const { data: books, error } = await supabaseClient
     .from("books")
     .select("*")
@@ -317,21 +316,39 @@ async function loadBooks() {
     return;
   }
 
-  tableBody.innerHTML = "";
-  selectedBookIds.clear();
-  updateSelectedCount();
+  allAdminBooks = books || [];
+  
+  // Terapkan filter pencarian jika kolom pencarian tidak kosong
+  filterAdminBooks();
+}
 
-  const selectAllCb = document.getElementById("select-all-books");
-  if (selectAllCb) selectAllCb.checked = false;
+// RENDER BUKU KE TABEL
+function renderAdminBooksTable(books) {
+  const tableBody = document.getElementById("admin-books-table");
+  if (!tableBody) return;
+
+  tableBody.innerHTML = "";
+
+  if (books.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="p-8 text-center text-slate-400 text-xs italic">
+          Buku tidak ditemukan sesuai kata kunci pencarian.
+        </td>
+      </tr>
+    `;
+    return;
+  }
 
   books.forEach((book) => {
     const safeBookJson = JSON.stringify(book).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+    const isChecked = selectedBookIds.has(book.id) ? "checked" : "";
 
     const tr = document.createElement("tr");
     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
     tr.innerHTML = `
       <td class="p-4 text-center">
-        <input type="checkbox" value="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" onchange="toggleBookSelection(this)" class="book-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+        <input type="checkbox" value="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" ${isChecked} onchange="toggleBookSelection(this)" class="book-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
       </td>
       <td class="p-4 flex items-center gap-3">
         <img src="${book.cover_url || 'https://via.placeholder.com/40'}" class="w-10 h-14 object-cover rounded shadow-sm">
@@ -367,7 +384,37 @@ async function loadBooks() {
     tableBody.appendChild(tr);
   });
 
+  // Sinkronkan status Checkbox "Pilih Semua"
+  const allCheckboxes = document.querySelectorAll(".book-checkbox");
+  const selectAllCb = document.getElementById("select-all-books");
+  if (selectAllCb) {
+    selectAllCb.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
+  }
+
   if (window.lucide) lucide.createIcons();
+}
+
+// FUNGSI PENCARIAN (FILTER REALTIME)
+function filterAdminBooks() {
+  const searchInput = document.getElementById("admin-search-input");
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+  if (!query) {
+    renderAdminBooksTable(allAdminBooks);
+    return;
+  }
+
+  const filtered = allAdminBooks.filter((book) => {
+    const titleMatch = (book.title || "").toLowerCase().includes(query);
+    const authorMatch = (book.author || "").toLowerCase().includes(query);
+    const categoryMatch = (book.category || "").toLowerCase().includes(query);
+    const ddcMatch = (book.ddc_code || "").toLowerCase().includes(query);
+    const shelfMatch = (book.shelf_location || "").toLowerCase().includes(query);
+
+    return titleMatch || authorMatch || categoryMatch || ddcMatch || shelfMatch;
+  });
+
+  renderAdminBooksTable(filtered);
 }
 
 // TOGGLE PILIH SEMUA BUKU
@@ -395,7 +442,7 @@ function toggleBookSelection(checkbox) {
   const allCheckboxes = document.querySelectorAll(".book-checkbox");
   const selectAllCb = document.getElementById("select-all-books");
   if (selectAllCb) {
-    selectAllCb.checked = allCheckboxes.length > 0 && selectedBookIds.size === allCheckboxes.length;
+    selectAllCb.checked = allCheckboxes.length > 0 && Array.from(allCheckboxes).every(cb => cb.checked);
   }
 
   updateSelectedCount();
@@ -420,12 +467,14 @@ function printSelectedQrs() {
   }
 
   const selectedItems = [];
-  const checkboxes = document.querySelectorAll(".book-checkbox:checked");
-  checkboxes.forEach((cb) => {
-    selectedItems.push({
-      id: cb.value,
-      title: cb.getAttribute("data-title") || "Buku"
-    });
+  selectedBookIds.forEach((id) => {
+    const book = allAdminBooks.find(b => b.id === id);
+    if (book) {
+      selectedItems.push({
+        id: book.id,
+        title: book.title
+      });
+    }
   });
 
   renderQrGrid(selectedItems);
@@ -644,6 +693,7 @@ async function deleteBook(bookId) {
   if (error) {
     alert("Gagal menghapus buku: " + error.message);
   } else {
+    selectedBookIds.delete(bookId);
     loadBooks();
     loadDashboardStats();
   }
