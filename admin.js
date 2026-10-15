@@ -133,22 +133,39 @@ function setupRealtimeScanUpdates() {
     .subscribe();
 }
 
+// FUNGSI PERPINDAHAN TAB NAVIGASI SIDEBAR
 function switchTab(tabName) {
+  const tabHome = document.getElementById("tab-home");
   const tabBooks = document.getElementById("tab-books");
   const tabReviews = document.getElementById("tab-reviews");
+
+  const btnHome = document.getElementById("btn-tab-home");
   const btnBooks = document.getElementById("btn-tab-books");
   const btnReviews = document.getElementById("btn-tab-reviews");
 
-  if (tabName === "books") {
+  const activeStyle = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
+  const inactiveStyle = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
+
+  // Sembunyikan semua konten tab
+  if (tabHome) tabHome.classList.add("hidden");
+  if (tabBooks) tabBooks.classList.add("hidden");
+  if (tabReviews) tabReviews.classList.add("hidden");
+
+  // Reset semua style tombol
+  if (btnHome) btnHome.className = inactiveStyle;
+  if (btnBooks) btnBooks.className = inactiveStyle;
+  if (btnReviews) btnReviews.className = inactiveStyle;
+
+  // Aktifkan tab yang dipilih
+  if (tabName === "home") {
+    if (tabHome) tabHome.classList.remove("hidden");
+    if (btnHome) btnHome.className = activeStyle;
+  } else if (tabName === "books") {
     if (tabBooks) tabBooks.classList.remove("hidden");
-    if (tabReviews) tabReviews.classList.add("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
+    if (btnBooks) btnBooks.className = activeStyle;
   } else if (tabName === "reviews") {
-    if (tabBooks) tabBooks.classList.add("hidden");
     if (tabReviews) tabReviews.classList.remove("hidden");
-    if (btnBooks) btnBooks.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
-    if (btnReviews) btnReviews.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
+    if (btnReviews) btnReviews.className = activeStyle;
   }
 }
 
@@ -317,8 +334,6 @@ async function loadBooks() {
   }
 
   allAdminBooks = books || [];
-  
-  // Terapkan filter pencarian jika kolom pencarian tidak kosong
   filterAdminBooks();
 }
 
@@ -384,7 +399,6 @@ function renderAdminBooksTable(books) {
     tableBody.appendChild(tr);
   });
 
-  // Sinkronkan status Checkbox "Pilih Semua"
   const allCheckboxes = document.querySelectorAll(".book-checkbox");
   const selectAllCb = document.getElementById("select-all-books");
   if (selectAllCb) {
@@ -459,7 +473,7 @@ function generateQr(bookId, bookTitle) {
   renderQrGrid([{ id: bookId, title: bookTitle }]);
 }
 
-// CETAK QR CODE MASAL (YANG DITANDAI/DICENTANG)
+// CETAK QR CODE MASAL
 function printSelectedQrs() {
   if (selectedBookIds.size === 0) {
     alert("Silakan pilih/centang minimal satu buku yang ingin dicetak QR Code-nya!");
