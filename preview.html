@@ -24,16 +24,13 @@
           <span class="text-slate-900">LIT-HOOK <span class="text-indigo-600">QR</span></span>
         </a>
         <span class="hidden sm:inline-block px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 text-[11px] font-bold rounded-full">
-          Generasi Kadar Literasi
+          Generasi Sadar Literasi
         </span>
       </div>
 
       <nav class="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
         <a href="index.html" class="flex items-center gap-1.5 hover:text-indigo-600 transition">
           <i data-lucide="home" class="w-4 h-4 text-indigo-500"></i> Beranda
-        </a>
-        <a href="index.html#scan" class="flex items-center gap-1.5 hover:text-indigo-600 transition">
-          <i data-lucide="qr-code" class="w-4 h-4 text-indigo-500"></i> Scan QR Buku
         </a>
         <a href="index.html#katalog" class="flex items-center gap-1.5 hover:text-indigo-600 transition">
           <i data-lucide="book-open" class="w-4 h-4 text-indigo-500"></i> Katalog Teaser
@@ -42,7 +39,7 @@
 
       <div class="flex items-center gap-2">
         <span class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-xs font-bold">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Admin Mode
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Visitor Mode
         </span>
         <a href="admin.html" class="bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-slate-800 transition shadow-sm">
           <i data-lucide="user-check" class="w-4 h-4"></i> Dashboard Admin
@@ -133,7 +130,7 @@
       <!-- CARD 2: TAB TEASER DENGAN PREVIEW LANGSUNG -->
       <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
         
-        <!-- Navigation Tab Header (HANYA 2 TAB) -->
+        <!-- Navigation Tab Header -->
         <div class="grid grid-cols-2 border-b border-slate-100 bg-slate-50/50 text-center font-bold text-xs text-slate-500">
           <button id="tab-btn-komik" onclick="switchTeaserTab('komik')" class="py-3.5 px-2 border-b-2 border-indigo-600 text-indigo-600 flex items-center justify-center gap-2 font-black transition">
             <i data-lucide="image" class="w-4 h-4"></i> Potongan Komik
@@ -157,18 +154,18 @@
         <!-- AREA KONTEN (KOMIK / VIDEO) -->
         <div class="p-4 sm:p-6">
           
-          <!-- 1. WIDGET POTONGAN KOMIK (DEFAULT) -->
+          <!-- 1. WIDGET POTONGAN KOMIK -->
           <div id="view-komik" class="relative bg-slate-950 rounded-2xl overflow-hidden min-h-[350px] flex items-center justify-center">
             <img id="teaser-image" src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=80" alt="Cuplikan Teaser" class="w-full h-80 sm:h-96 object-contain bg-slate-900">
             
-            <button onclick="openModalZoom()" class="absolute top-3 right-3 px-3 py-1.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition">
+            <button onclick="openModalZoom()" class="absolute top-3 right-3 px-3 py-1.5 bg-slate-900/80 backdrop-blur-md hover:bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition z-10">
               <i data-lucide="search" class="w-3.5 h-3.5"></i> Zoom Gambar
             </button>
 
-            <button onclick="prevSlide()" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg">
+            <button onclick="prevSlide()" class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg z-10">
               <i data-lucide="chevron-left" class="w-5 h-5"></i>
             </button>
-            <button onclick="nextSlide()" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg">
+            <button onclick="nextSlide()" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-slate-900/80 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center transition shadow-lg z-10">
               <i data-lucide="chevron-right" class="w-5 h-5"></i>
             </button>
 
@@ -179,7 +176,7 @@
             </div>
           </div>
 
-          <!-- 2. WIDGET VIDEO TRAILER MULTI-PLATFORM -->
+          <!-- 2. WIDGET VIDEO TRAILER -->
           <div id="view-video" class="hidden bg-slate-950 rounded-2xl overflow-hidden min-h-[350px] flex items-center justify-center">
             <iframe id="video-iframe" class="w-full h-80 sm:h-96 rounded-2xl" src="" title="Video Trailer Buku" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             <div id="video-empty" class="hidden text-center p-8 text-slate-400">
@@ -202,7 +199,6 @@
             <h2 class="text-xl sm:text-2xl font-black text-rose-100 tracking-tight">
               "Sesuatu Yang Mengejutkan Terjadi!"
             </h2>
-            <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">sfx</p>
 
             <div class="mt-6 max-w-lg mx-auto bg-slate-900/90 border border-purple-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
               <div>
@@ -301,7 +297,6 @@
     let teaserSlides = [];
     let currentSlideIdx = 0;
 
-    // HELPER 1: DIRECT LINK GAMBAR GOOGLE DRIVE
     function formatDriveUrl(url) {
       if (!url) return "";
       let driveUrl = url.trim();
@@ -314,12 +309,10 @@
       return driveUrl;
     }
 
-    // HELPER 2: EMBED PLAYER KONVERTER MULTI-PLATFORM (YOUTUBE, TIKTOK, INSTAGRAM, DRIVE)
     function formatVideoEmbedUrl(url) {
       if (!url) return "";
       let videoUrl = url.trim();
 
-      // 1. YouTube (watch?v=, youtu.be/, /shorts/, atau /embed/)
       if (videoUrl.includes("youtube.com") || videoUrl.includes("youtu.be")) {
         let videoId = "";
         if (videoUrl.includes("youtu.be/")) {
@@ -334,7 +327,6 @@
         return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : videoUrl;
       }
 
-      // 2. TikTok (video/123456789)
       if (videoUrl.includes("tiktok.com")) {
         const match = videoUrl.match(/\/video\/(\d+)/);
         if (match && match[1]) {
@@ -342,14 +334,12 @@
         }
       }
 
-      // 3. Instagram (Reels atau Posts: /reel/CODE/ atau /p/CODE/)
       if (videoUrl.includes("instagram.com")) {
         let cleanUrl = videoUrl.split("?")[0];
         if (!cleanUrl.endsWith("/")) cleanUrl += "/";
         return `${cleanUrl}embed/`;
       }
 
-      // 4. Google Drive Video
       if (videoUrl.includes("drive.google.com")) {
         return videoUrl.replace(/\/view.*$/, "/preview");
       }
@@ -369,9 +359,25 @@
         return;
       }
 
+      await recordBookScan(currentBookId);
       await loadBookData(currentBookId);
       await loadReviews(currentBookId);
     });
+
+    // FUNGSI UNTUK CATAT SCAN & INCREMENT REALTIME
+    async function recordBookScan(bookId) {
+      try {
+        // 1. Catat Log Scan
+        await supabaseClient.from("scan_logs").insert([{ book_id: bookId }]);
+
+        // 2. Ambil scan_count lama lalu update + 1
+        const { data: book } = await supabaseClient.from("books").select("scan_count").eq("id", bookId).maybeSingle();
+        const newCount = (book?.scan_count || 0) + 1;
+        await supabaseClient.from("books").update({ scan_count: newCount }).eq("id", bookId);
+      } catch (e) {
+        console.error("Gagal mencatat scan:", e);
+      }
+    }
 
     async function loadBookData(id) {
       try {
@@ -391,7 +397,6 @@
 
         document.getElementById("book-content").classList.remove("hidden");
 
-        // Format Gambar Cover
         document.getElementById("book-cover").src = formatDriveUrl(book.cover_url) || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=400&q=80";
         document.getElementById("book-badge").textContent = book.category || "Fiksi";
         document.getElementById("book-title").textContent = book.title || "Tanpa Judul";
@@ -404,7 +409,6 @@
         document.getElementById("book-shelf-full").textContent = locationFull;
         document.getElementById("stopping-shelf").textContent = locationFull;
 
-        // Slide Komik Teaser
         teaserSlides = [
           { url: formatDriveUrl(book.chapter_1_url), caption: "Bagian 1" },
           { url: formatDriveUrl(book.chapter_2_url), caption: "Bagian 2" },
@@ -418,7 +422,6 @@
           document.getElementById("teaser-caption").textContent = "Belum ada gambar cuplikan untuk buku ini.";
         }
 
-        // EMBED VIDEO TRAILER MULTI-PLATFORM
         const videoIframe = document.getElementById("video-iframe");
         const videoEmpty = document.getElementById("video-empty");
         const rawVideoUrl = book.video_url || book.url_video;
@@ -449,14 +452,12 @@
       const typeTitle = document.getElementById("teaser-type-title");
       const slideIndicator = document.getElementById("slide-indicator");
 
-      // Reset style tombol tab
       [btnKomik, btnVideo].forEach(b => {
         if (b) {
           b.className = "py-3.5 px-2 hover:text-slate-900 flex items-center justify-center gap-2 transition font-bold text-slate-500 border-b-2 border-transparent";
         }
       });
 
-      // Sembunyikan semua tampilan
       if (viewKomik) viewKomik.classList.add("hidden");
       if (viewVideo) viewVideo.classList.add("hidden");
 
@@ -561,7 +562,7 @@
         student_name: studentName,
         rating: rating,
         comment: comment,
-        status: 'approved'
+        is_approved: true
       }]);
 
       if (error) {
