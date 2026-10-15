@@ -7,6 +7,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let editingBookId = null;
 let scanChartInstance = null;
 let realtimeSubscription = null;
+let selectedBookIds = new Set();
 
 // HELPER: Upload File Gambar ke Supabase Storage
 async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
@@ -301,7 +302,7 @@ function renderChart(labels, data) {
   });
 }
 
-// LOAD DATA BUKU KE TABEL ADMIN
+// LOAD DATA BUKU KE TABEL ADMIN (Dengan Checkbox)
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -317,12 +318,21 @@ async function loadBooks() {
   }
 
   tableBody.innerHTML = "";
+  selectedBookIds.clear();
+  updateSelectedCount();
+
+  const selectAllCb = document.getElementById("select-all-books");
+  if (selectAllCb) selectAllCb.checked = false;
+
   books.forEach((book) => {
     const safeBookJson = JSON.stringify(book).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
     const tr = document.createElement("tr");
     tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
     tr.innerHTML = `
+      <td class="p-4 text-center">
+        <input type="checkbox" value="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" onchange="toggleBookSelection(this)" class="book-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+      </td>
       <td class="p-4 flex items-center gap-3">
         <img src="${book.cover_url || 'https://via.placeholder.com/40'}" class="w-10 h-14 object-cover rounded shadow-sm">
         <div>
@@ -358,6 +368,106 @@ async function loadBooks() {
   });
 
   if (window.lucide) lucide.createIcons();
+}
+
+// TOGGLE PILIH SEMUA BUKU
+function toggleSelectAllBooks(masterCheckbox) {
+  const checkboxes = document.querySelectorAll(".book-checkbox");
+  checkboxes.forEach((cb) => {
+    cb.checked = masterCheckbox.checked;
+    if (masterCheckbox.checked) {
+      selectedBookIds.add(cb.value);
+    } else {
+      selectedBookIds.delete(cb.value);
+    }
+  });
+  updateSelectedCount();
+}
+
+// TOGGLE PILIH SATU BUKU
+function toggleBookSelection(checkbox) {
+  if (checkbox.checked) {
+    selectedBookIds.add(checkbox.value);
+  } else {
+    selectedBookIds.delete(checkbox.value);
+  }
+
+  const allCheckboxes = document.querySelectorAll(".book-checkbox");
+  const selectAllCb = document.getElementById("select-all-books");
+  if (selectAllCb) {
+    selectAllCb.checked = allCheckboxes.length > 0 && selectedBookIds.size === allCheckboxes.length;
+  }
+
+  updateSelectedCount();
+}
+
+// UPDATE INDIKATOR JUMLAH TERPILIH
+function updateSelectedCount() {
+  const countElem = document.getElementById("selected-count");
+  if (countElem) countElem.textContent = selectedBookIds.size;
+}
+
+// CETAK QR CODE TUNGGAL
+function generateQr(bookId, bookTitle) {
+  renderQrGrid([{ id: bookId, title: bookTitle }]);
+}
+
+// CETAK QR CODE MASAL (YANG DITANDAI/DICENTANG)
+function printSelectedQrs() {
+  if (selectedBookIds.size === 0) {
+    alert("Silakan pilih/centang minimal satu buku yang ingin dicetak QR Code-nya!");
+    return;
+  }
+
+  const selectedItems = [];
+  const checkboxes = document.querySelectorAll(".book-checkbox:checked");
+  checkboxes.forEach((cb) => {
+    selectedItems.push({
+      id: cb.value,
+      title: cb.getAttribute("data-title") || "Buku"
+    });
+  });
+
+  renderQrGrid(selectedItems);
+}
+
+// RENDER QR CODE KE MODAL
+function renderQrGrid(items) {
+  const qrModal = document.getElementById("qr-modal");
+  const container = document.getElementById("qrcode-container");
+
+  if (!qrModal || !container) return;
+
+  container.innerHTML = "";
+
+  const currentUrl = window.location.href;
+  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
+
+  items.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "bg-white p-3 rounded-xl border border-slate-200 flex flex-col items-center justify-between text-center space-y-2 shadow-sm";
+    
+    const qrDivId = `qr-item-${index}`;
+    card.innerHTML = `
+      <div id="${qrDivId}" class="flex justify-center p-1 bg-white"></div>
+      <p class="text-[11px] font-bold text-slate-800 line-clamp-2 leading-tight">${item.title}</p>
+    `;
+    container.appendChild(card);
+
+    const targetUrl = `${baseUrl}/preview.html?id=${item.id}`;
+    new QRCode(document.getElementById(qrDivId), {
+      text: targetUrl,
+      width: 120,
+      height: 120,
+    });
+  });
+
+  qrModal.classList.remove("hidden");
+}
+
+function closeQrModal() {
+  const qrModal = document.getElementById("qr-modal");
+  if (qrModal) qrModal.classList.add("hidden");
 }
 
 // LOAD ULASAN SISWA
@@ -526,34 +636,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
-function generateQr(bookId, bookTitle) {
-  const qrModal = document.getElementById("qr-modal");
-  const qrContainer = document.getElementById("qrcode");
-  const titleElem = document.getElementById("qr-book-title");
-
-  if (!qrModal || !qrContainer) return;
-
-  qrContainer.innerHTML = "";
-  if (titleElem) titleElem.textContent = bookTitle;
-
-  const currentUrl = window.location.href;
-  const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
-  const targetUrl = `${baseUrl}/preview.html?id=${bookId}`;
-
-  new QRCode(qrContainer, {
-    text: targetUrl,
-    width: 180,
-    height: 180,
-  });
-
-  qrModal.classList.remove("hidden");
-}
-
-function closeQrModal() {
-  const qrModal = document.getElementById("qr-modal");
-  if (qrModal) qrModal.classList.add("hidden");
-}
 
 async function deleteBook(bookId) {
   if (!confirm("Apakah Anda yakin ingin menghapus buku ini?")) return;
