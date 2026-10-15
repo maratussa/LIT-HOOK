@@ -8,8 +8,13 @@ let editingBookId = null;
 let scanChartInstance = null;
 let realtimeSubscription = null;
 
-let allAdminBooks = []; // Array penampung seluruh data buku
-let selectedBookIds = new Set(); // Set penampung ID buku terpilih untuk cetak masal
+let allAdminBooks = []; 
+let filteredAdminBooks = [];
+let selectedBookIds = new Set(); 
+
+// Variabel Paginasi
+let currentPage = 1;
+const itemsPerPage = 10;
 
 // HELPER: Upload File Gambar ke Supabase Storage
 async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
@@ -44,7 +49,6 @@ async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
-  // Set default filter bulan ke bulan saat ini (YYYY-MM)
   const monthPicker = document.getElementById("report-month-picker");
   if (monthPicker && !monthPicker.value) {
     const today = new Date();
@@ -117,7 +121,6 @@ async function checkAdminRole(userId) {
   setupRealtimeScanUpdates();
 }
 
-// SETUP SUPABASE REALTIME LISTENER UNTUK AUTO-UPDATE STATISTIK
 function setupRealtimeScanUpdates() {
   if (realtimeSubscription) return;
 
@@ -133,7 +136,6 @@ function setupRealtimeScanUpdates() {
     .subscribe();
 }
 
-// FUNGSI PERPINDAHAN TAB NAVIGASI SIDEBAR
 function switchTab(tabName) {
   const tabHome = document.getElementById("tab-home");
   const tabBooks = document.getElementById("tab-books");
@@ -146,17 +148,14 @@ function switchTab(tabName) {
   const activeStyle = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left";
   const inactiveStyle = "w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition text-left";
 
-  // Sembunyikan semua konten tab
   if (tabHome) tabHome.classList.add("hidden");
   if (tabBooks) tabBooks.classList.add("hidden");
   if (tabReviews) tabReviews.classList.add("hidden");
 
-  // Reset semua style tombol
   if (btnHome) btnHome.className = inactiveStyle;
   if (btnBooks) btnBooks.className = inactiveStyle;
   if (btnReviews) btnReviews.className = inactiveStyle;
 
-  // Aktifkan tab yang dipilih
   if (tabName === "home") {
     if (tabHome) tabHome.classList.remove("hidden");
     if (btnHome) btnHome.className = activeStyle;
@@ -172,7 +171,6 @@ function switchTab(tabName) {
 // LOAD DASHBOARD STATS & LAPORAN BULANAN
 async function loadDashboardStats() {
   try {
-    // 1. Total Buku
     const { count: bookCount } = await supabaseClient
       .from("books")
       .select("*", { count: "exact", head: true });
@@ -180,7 +178,6 @@ async function loadDashboardStats() {
     const statBooks = document.getElementById("stat-total-books");
     if (statBooks) statBooks.textContent = bookCount || 0;
 
-    // 2. Total Review
     const { count: reviewCount } = await supabaseClient
       .from("reviews")
       .select("*", { count: "exact", head: true });
@@ -188,7 +185,6 @@ async function loadDashboardStats() {
     const statReviews = document.getElementById("stat-total-reviews");
     if (statReviews) statReviews.textContent = reviewCount || 0;
 
-    // 3. Ambil Filter Bulan
     const monthPicker = document.getElementById("report-month-picker");
     let selectedYear, selectedMonth;
 
@@ -205,7 +201,6 @@ async function loadDashboardStats() {
     const startOfMonth = new Date(selectedYear, selectedMonth, 1).toISOString();
     const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59).toISOString();
 
-    // 4. Query Scan Logs Sesuai Rentang Bulan
     const { data: logs } = await supabaseClient
       .from("scan_logs")
       .select("book_id, created_at")
@@ -225,7 +220,6 @@ async function loadDashboardStats() {
     const statMonthlyScans = document.getElementById("stat-monthly-scans");
     if (statMonthlyScans) statMonthlyScans.textContent = totalMonthlyScans;
 
-    // 5. Query Semua Buku untuk Statistik Global & Diagram
     const { data: books } = await supabaseClient
       .from("books")
       .select("id, title, scan_count")
@@ -236,7 +230,6 @@ async function loadDashboardStats() {
       const statTotalScans = document.getElementById("stat-total-scans");
       if (statTotalScans) statTotalScans.textContent = globalTotalScans;
 
-      // Cari Buku Terpopuler
       let maxScan = -1;
       let popularTitle = "-";
       books.forEach(b => {
@@ -250,7 +243,6 @@ async function loadDashboardStats() {
       const statPop = document.getElementById("stat-popular-book");
       if (statPop) statPop.textContent = popularTitle;
 
-      // Data Diagram berdasarkan Scan Bulan Ini
       const labels = books.map(b => b.title.length > 12 ? b.title.substring(0, 12) + "..." : b.title);
       const scanData = books.map(b => monthlyCountMap[b.id] || 0);
 
@@ -263,7 +255,6 @@ async function loadDashboardStats() {
   }
 }
 
-// RENDER DIAGRAM CHART.JS RESPONSIIF
 function renderChart(labels, data) {
   const ctx = document.getElementById("scanChart");
   if (!ctx) return;
@@ -337,67 +328,109 @@ async function loadBooks() {
   filterAdminBooks();
 }
 
-// RENDER BUKU KE TABEL
-function renderAdminBooksTable(books) {
+// FUNGSI PENCARIAN (FILTER REALTIME)
+function filterAdminBooks() {
+  const searchInput = document.getElementById("admin-search-input");
+  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+  if (!query) {
+    filteredAdminBooks = [...allAdminBooks];
+  } else {
+    filteredAdminBooks = allAdminBooks.filter((book) => {
+      const titleMatch = (book.title || "").toLowerCase().includes(query);
+      const authorMatch = (book.author || "").toLowerCase().includes(query);
+      const categoryMatch = (book.category || "").toLowerCase().includes(query);
+      const ddcMatch = (book.ddc_code || "").toLowerCase().includes(query);
+      const shelfMatch = (book.shelf_location || "").toLowerCase().includes(query);
+
+      return titleMatch || authorMatch || categoryMatch || ddcMatch || shelfMatch;
+    });
+  }
+
+  currentPage = 1;
+  renderPaginatedBooksTable();
+}
+
+// RENDER BUKU DENGAN PAGINASI (10 PER HALAMAN)
+function renderPaginatedBooksTable() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
 
   tableBody.innerHTML = "";
 
-  if (books.length === 0) {
+  const totalItems = filteredAdminBooks.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentBooks = filteredAdminBooks.slice(startIndex, endIndex);
+
+  if (currentBooks.length === 0) {
     tableBody.innerHTML = `
       <tr>
         <td colspan="6" class="p-8 text-center text-slate-400 text-xs italic">
-          Buku tidak ditemukan sesuai kata kunci pencarian.
+          Buku tidak ditemukan.
         </td>
       </tr>
     `;
-    return;
+  } else {
+    currentBooks.forEach((book) => {
+      const safeBookJson = JSON.stringify(book).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+      const isChecked = selectedBookIds.has(book.id) ? "checked" : "";
+
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+      tr.innerHTML = `
+        <td class="p-4 text-center">
+          <input type="checkbox" value="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" ${isChecked} onchange="toggleBookSelection(this)" class="book-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+        </td>
+        <td class="p-4 flex items-center gap-3">
+          <img src="${book.cover_url || 'https://via.placeholder.com/40'}" class="w-10 h-14 object-cover rounded shadow-sm">
+          <div>
+            <p class="font-bold text-slate-800 line-clamp-1">${book.title}</p>
+            <p class="text-xs text-slate-500">${book.author}</p>
+          </div>
+        </td>
+        <td class="p-4 text-xs font-semibold text-slate-600">${book.category || '-'}</td>
+        <td class="p-4 text-xs">
+          <span class="block font-bold text-indigo-600">${book.ddc_code || '-'}</span>
+          <span class="text-slate-500">${book.shelf_location || '-'}</span>
+        </td>
+        <td class="p-4">
+          <span class="px-2.5 py-1 text-xs font-extrabold rounded-full bg-indigo-50 text-indigo-600">
+            ${book.scan_count || 0} scan
+          </span>
+        </td>
+        <td class="p-4 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <button onclick="generateQr('${book.id}', '${book.title.replace(/'/g, "\\'")}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700" title="Cetak QR">
+              <i data-lucide="qr-code" class="w-4 h-4"></i>
+            </button>
+            <button onclick='editBook(${safeBookJson})' class="p-2 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-600" title="Edit Buku">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteBook('${book.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600" title="Hapus">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
   }
 
-  books.forEach((book) => {
-    const safeBookJson = JSON.stringify(book).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-    const isChecked = selectedBookIds.has(book.id) ? "checked" : "";
+  // Update Tampilan Indikator Paginasi
+  document.getElementById("pagination-start").textContent = totalItems === 0 ? 0 : startIndex + 1;
+  document.getElementById("pagination-end").textContent = endIndex;
+  document.getElementById("pagination-total").textContent = totalItems;
+  document.getElementById("pagination-current-page").textContent = currentPage;
+  document.getElementById("pagination-total-pages").textContent = totalPages;
 
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-    tr.innerHTML = `
-      <td class="p-4 text-center">
-        <input type="checkbox" value="${book.id}" data-title="${book.title.replace(/"/g, '&quot;')}" ${isChecked} onchange="toggleBookSelection(this)" class="book-checkbox rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
-      </td>
-      <td class="p-4 flex items-center gap-3">
-        <img src="${book.cover_url || 'https://via.placeholder.com/40'}" class="w-10 h-14 object-cover rounded shadow-sm">
-        <div>
-          <p class="font-bold text-slate-800 line-clamp-1">${book.title}</p>
-          <p class="text-xs text-slate-500">${book.author}</p>
-        </div>
-      </td>
-      <td class="p-4 text-xs font-semibold text-slate-600">${book.category || '-'}</td>
-      <td class="p-4 text-xs">
-        <span class="block font-bold text-indigo-600">${book.ddc_code || '-'}</span>
-        <span class="text-slate-500">${book.shelf_location || '-'}</span>
-      </td>
-      <td class="p-4">
-        <span class="px-2.5 py-1 text-xs font-extrabold rounded-full bg-indigo-50 text-indigo-600">
-          ${book.scan_count || 0} scan
-        </span>
-      </td>
-      <td class="p-4 text-center">
-        <div class="flex items-center justify-center gap-2">
-          <button onclick="generateQr('${book.id}', '${book.title.replace(/'/g, "\\'")}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700" title="Cetak QR">
-            <i data-lucide="qr-code" class="w-4 h-4"></i>
-          </button>
-          <button onclick='editBook(${safeBookJson})' class="p-2 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-600" title="Edit Buku">
-            <i data-lucide="pencil" class="w-4 h-4"></i>
-          </button>
-          <button onclick="deleteBook('${book.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-600" title="Hapus">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </td>
-    `;
-    tableBody.appendChild(tr);
-  });
+  document.getElementById("btn-prev-page").disabled = currentPage === 1;
+  document.getElementById("btn-next-page").disabled = currentPage === totalPages || totalItems === 0;
 
   const allCheckboxes = document.querySelectorAll(".book-checkbox");
   const selectAllCb = document.getElementById("select-all-books");
@@ -408,27 +441,75 @@ function renderAdminBooksTable(books) {
   if (window.lucide) lucide.createIcons();
 }
 
-// FUNGSI PENCARIAN (FILTER REALTIME)
-function filterAdminBooks() {
-  const searchInput = document.getElementById("admin-search-input");
-  const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
+function changePage(direction) {
+  currentPage += direction;
+  renderPaginatedBooksTable();
+}
 
-  if (!query) {
-    renderAdminBooksTable(allAdminBooks);
+// EKSPOR DATA KE EXCEL (.XLSX)
+function exportToExcel() {
+  if (allAdminBooks.length === 0) {
+    alert("Tidak ada data buku yang bisa diekspor.");
     return;
   }
 
-  const filtered = allAdminBooks.filter((book) => {
-    const titleMatch = (book.title || "").toLowerCase().includes(query);
-    const authorMatch = (book.author || "").toLowerCase().includes(query);
-    const categoryMatch = (book.category || "").toLowerCase().includes(query);
-    const ddcMatch = (book.ddc_code || "").toLowerCase().includes(query);
-    const shelfMatch = (book.shelf_location || "").toLowerCase().includes(query);
+  const exportData = allAdminBooks.map((book, index) => ({
+    "No": index + 1,
+    "Judul Buku": book.title || "-",
+    "Penulis": book.author || "-",
+    "Kode DDC": book.ddc_code || "-",
+    "Lokasi Rak": book.shelf_location || "-",
+    "Kategori": book.category || "-",
+    "Total Scan": book.scan_count || 0
+  }));
 
-    return titleMatch || authorMatch || categoryMatch || ddcMatch || shelfMatch;
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Koleksi Buku");
+
+  XLSX.writeFile(workbook, `Katalog_Buku_LIT-HOOK_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+// EKSPOR DATA KE PDF
+function exportToPDF() {
+  if (allAdminBooks.length === 0) {
+    alert("Tidak ada data buku yang bisa diekspor.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("Laporan Katalog Buku — LIT-HOOK QR", 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 22);
+
+  const tableColumn = ["No", "Judul Buku", "Penulis", "DDC", "Rak", "Kategori", "Scan"];
+  const tableRows = [];
+
+  allAdminBooks.forEach((book, index) => {
+    const bookData = [
+      index + 1,
+      book.title || "-",
+      book.author || "-",
+      book.ddc_code || "-",
+      book.shelf_location || "-",
+      book.category || "-",
+      book.scan_count || 0
+    ];
+    tableRows.push(bookData);
   });
 
-  renderAdminBooksTable(filtered);
+  doc.autoTable({
+    head: [tableColumn],
+    body: tableRows,
+    startY: 28,
+    theme: 'grid',
+    headStyles: { fillColor: [99, 102, 241] }
+  });
+
+  doc.save(`Katalog_Buku_LIT-HOOK_${new Date().toISOString().split('T')[0]}.pdf`);
 }
 
 // TOGGLE PILIH SEMUA BUKU
