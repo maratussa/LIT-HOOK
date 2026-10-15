@@ -14,6 +14,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Chart.js CDN untuk Diagram -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Library untuk Ekspor Excel & PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen">
 
@@ -54,14 +59,24 @@
   <div id="adminDashboard" class="hidden min-h-screen flex flex-col md:flex-row bg-slate-100">
     <!-- Sidebar Navigation -->
     <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex flex-col justify-between border-r border-slate-800 shrink-0">
-      <div>
-        <div class="flex items-center gap-3 mb-8 px-2">
+      <div class="space-y-6">
+        <!-- TOMBOL KELUAR (POSISI PALING ATAS SEBELAH KIRI) -->
+        <div>
+          <button id="logoutBtn" class="w-full flex items-center gap-2 px-3.5 py-2.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs font-bold transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Dashboard
+          </button>
+        </div>
+
+        <!-- LOGO PERPUSTAKAAN -->
+        <div class="flex items-center gap-3 px-1 pt-2">
           <div class="bg-indigo-600 text-white p-2 rounded-xl">
             <i data-lucide="qr-code" class="w-5 h-5"></i>
           </div>
           <span class="font-black text-lg tracking-tight">LIT-HOOK Admin</span>
         </div>
-        <nav class="space-y-1.5 text-sm font-semibold">
+
+        <!-- MENU NAVIGASI SIDEBAR -->
+        <nav class="space-y-1.5 text-sm font-semibold pt-2">
           <button id="btn-tab-home" onclick="switchTab('home')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition shadow-lg shadow-indigo-600/20 text-left">
             <i data-lucide="home" class="w-4 h-4"></i> Beranda
           </button>
@@ -74,17 +89,15 @@
         </nav>
       </div>
 
-      <div class="pt-6 border-t border-slate-800 mt-6 md:mt-0">
-        <button id="logoutBtn" class="w-full flex items-center gap-2 px-4 py-2.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl text-xs font-bold transition">
-          <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
-        </button>
+      <div class="pt-6 border-t border-slate-800 text-[11px] text-slate-500 text-center font-medium">
+        &copy; 2026 LIT-HOOK QR
       </div>
     </aside>
 
     <!-- Main Content Panel -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto space-y-6">
 
-      <!-- BANNER HEADER KELOLA PUSTAKAWAN -->
+      <!-- BANNER HEADER -->
       <div class="bg-slate-950 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
         <div class="space-y-2 max-w-xl z-10">
           <span class="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold rounded-full uppercase tracking-wider">
@@ -194,17 +207,17 @@
         </div>
       </div>
 
-      <!-- PAGE 2: TAB KOLEKSI BUKU (TAMBAH BUKU BARU & TABEL BUKU) -->
+      <!-- PAGE 2: TAB KOLEKSI BUKU -->
       <div id="tab-books" class="hidden space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-black text-slate-900 tracking-tight">Koleksi Buku Aktif</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Atur informasi buku, lokasi rak, serta buat stiker QR code</p>
+            <p class="text-xs text-slate-500 mt-0.5">Kelola informasi buku, unggah gambar bab teaser, ekspor laporan, serta cetak stiker QR code</p>
           </div>
           
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div class="flex flex-wrap items-center gap-2.5">
             <!-- INPUT SEARCH BUKU -->
-            <div class="relative w-full sm:w-64">
+            <div class="relative w-full sm:w-60">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input 
                 type="text" 
@@ -215,13 +228,21 @@
               >
             </div>
             
+            <!-- TOMBOL EKSPOR EXCEL & PDF -->
+            <button onclick="exportToExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
+            </button>
+            <button onclick="exportToPDF()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+              <i data-lucide="file-text" class="w-4 h-4"></i> PDF
+            </button>
+
             <!-- TOMBOL TAMBAH BUKU BARU -->
-            <button onclick="openBookModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 whitespace-nowrap">
-              <i data-lucide="plus" class="w-4 h-4"></i> Tambah Buku Baru
+            <button onclick="openBookModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i> Tambah Buku
             </button>
 
             <!-- TOMBOL CETAK TERPILIH -->
-            <button onclick="printSelectedQrs()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+            <button onclick="printSelectedQrs()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
               <i data-lucide="printer" class="w-4 h-4"></i> Cetak QR (<span id="selected-count">0</span>)
             </button>
           </div>
@@ -246,6 +267,24 @@
                 <!-- Baris buku dimuat dinamis oleh admin.js -->
               </tbody>
             </table>
+          </div>
+
+          <!-- KONTROL PAGINASI BUKU -->
+          <div class="p-4 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-medium text-slate-500">
+            <div>
+              Menampilkan <span id="pagination-start" class="font-bold text-slate-800">0</span> - <span id="pagination-end" class="font-bold text-slate-800">0</span> dari <span id="pagination-total" class="font-bold text-slate-800">0</span> buku
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-prev-page" onclick="changePage(-1)" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Prev
+              </button>
+              <span class="px-3 py-1.5 font-bold text-slate-700 bg-slate-100 rounded-lg">
+                Halaman <span id="pagination-current-page">1</span> / <span id="pagination-total-pages">1</span>
+              </span>
+              <button id="btn-next-page" onclick="changePage(1)" class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1">
+                Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
