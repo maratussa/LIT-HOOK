@@ -6,17 +6,12 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let editingBookId = null;
 let scanChartInstance = null;
+let realtimeSubscription = null;
 
-// Element DOM Utama
-const loginForm = document.getElementById("loginForm");
-const loginSection = document.getElementById("loginSection");
-const adminDashboard = document.getElementById("adminDashboard");
-const loginError = document.getElementById("loginError");
-
-// HELPER: Upload File Gambar ke Supabase Storage & Kembalikan Public URL
+// HELPER: Upload File Gambar ke Supabase Storage
 async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
   if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-    return null; // Jika tidak ada file yang dipilih, kembalikan null
+    return null;
   }
 
   const file = fileInput.files[0];
@@ -45,21 +40,31 @@ async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
   return publicUrlData ? publicUrlData.publicUrl : null;
 }
 
-// Cek Sesi Saat Halaman Dimuat
 window.addEventListener("DOMContentLoaded", async () => {
+  // Set default filter bulan ke bulan saat ini (YYYY-MM)
+  const monthPicker = document.getElementById("report-month-picker");
+  if (monthPicker && !monthPicker.value) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    monthPicker.value = `${yyyy}-${mm}`;
+  }
+
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
     await checkAdminRole(session.user.id);
   }
 });
 
-// Form Submit Handler (Login)
+// Login Form
+const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
+    const loginError = document.getElementById("loginError");
     if (loginError) loginError.classList.add("hidden");
 
     const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -78,7 +83,6 @@ if (loginForm) {
   });
 }
 
-// Verifikasi Hak Akses Admin & Buka Dashboard
 async function checkAdminRole(userId) {
   const { data, error } = await supabaseClient
     .from("admin_profiles")
@@ -107,21 +111,25 @@ async function checkAdminRole(userId) {
   await loadDashboardStats();
   await loadBooks();
   await loadReviews();
+  setupRealtimeScanUpdates();
 }
 
-// Fungsi Logout Global
-async function handleLogout() {
-  await supabaseClient.auth.signOut();
-  window.location.reload();
+// SETUP SUPABASE REALTIME LISTENER UNTUK AUTO-UPDATE STATISTIK
+function setupRealtimeScanUpdates() {
+  if (realtimeSubscription) return;
+
+  realtimeSubscription = supabaseClient
+    .channel('public:scan_updates')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scan_logs' }, () => {
+      loadDashboardStats();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'books' }, () => {
+      loadDashboardStats();
+      loadBooks();
+    })
+    .subscribe();
 }
 
-document.addEventListener("click", async (e) => {
-  if (e.target && (e.target.id === "logoutBtn" || e.target.closest("#logoutBtn"))) {
-    await handleLogout();
-  }
-});
-
-// Navigasi Tab (Kelola Buku & Moderasi Review)
 function switchTab(tabName) {
   const tabBooks = document.getElementById("tab-books");
   const tabReviews = document.getElementById("tab-reviews");
@@ -141,9 +149,10 @@ function switchTab(tabName) {
   }
 }
 
-// Load Ringkasan Data Statistik & Chart secara Realtime dari Supabase
+// LOAD DASHBOARD STATS & LAPORAN BULANAN
 async function loadDashboardStats() {
   try {
+    // 1. Total Buku
     const { count: bookCount } = await supabaseClient
       .from("books")
       .select("*", { count: "exact", head: true });
@@ -151,6 +160,7 @@ async function loadDashboardStats() {
     const statBooks = document.getElementById("stat-total-books");
     if (statBooks) statBooks.textContent = bookCount || 0;
 
+    // 2. Total Review
     const { count: reviewCount } = await supabaseClient
       .from("reviews")
       .select("*", { count: "exact", head: true });
@@ -158,30 +168,60 @@ async function loadDashboardStats() {
     const statReviews = document.getElementById("stat-total-reviews");
     if (statReviews) statReviews.textContent = reviewCount || 0;
 
-    const { data: books, error } = await supabaseClient
-      .from("books")
-      .select("title, scan_count")
-      .order("created_at", { ascending: false });
+    // 3. Ambil Filter Bulan
+    const monthPicker = document.getElementById("report-month-picker");
+    let selectedYear, selectedMonth;
 
-    if (error) {
-      console.error("Gagal memuat data statistik scan:", error.message);
-      return;
+    if (monthPicker && monthPicker.value) {
+      const parts = monthPicker.value.split("-");
+      selectedYear = parseInt(parts[0]);
+      selectedMonth = parseInt(parts[1]) - 1;
+    } else {
+      const now = new Date();
+      selectedYear = now.getFullYear();
+      selectedMonth = now.getMonth();
     }
 
+    const startOfMonth = new Date(selectedYear, selectedMonth, 1).toISOString();
+    const endOfMonth = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59).toISOString();
+
+    // 4. Query Scan Logs Sesuai Rentang Bulan
+    const { data: logs } = await supabaseClient
+      .from("scan_logs")
+      .select("book_id, created_at")
+      .gte("created_at", startOfMonth)
+      .lte("created_at", endOfMonth);
+
+    const monthlyCountMap = {};
+    let totalMonthlyScans = 0;
+
+    if (logs) {
+      totalMonthlyScans = logs.length;
+      logs.forEach(log => {
+        monthlyCountMap[log.book_id] = (monthlyCountMap[log.book_id] || 0) + 1;
+      });
+    }
+
+    const statMonthlyScans = document.getElementById("stat-monthly-scans");
+    if (statMonthlyScans) statMonthlyScans.textContent = totalMonthlyScans;
+
+    // 5. Query Semua Buku untuk Statistik Global & Diagram
+    const { data: books } = await supabaseClient
+      .from("books")
+      .select("id, title, scan_count")
+      .order("created_at", { ascending: false });
+
     if (books && books.length > 0) {
-      const labels = books.map(b => b.title.length > 15 ? b.title.substring(0, 15) + "..." : b.title);
-      const scanData = books.map(b => Number(b.scan_count) || 0);
+      const globalTotalScans = books.reduce((acc, b) => acc + (Number(b.scan_count) || 0), 0);
+      const statTotalScans = document.getElementById("stat-total-scans");
+      if (statTotalScans) statTotalScans.textContent = globalTotalScans;
 
-      const totalScans = scanData.reduce((acc, curr) => acc + curr, 0);
-      const statScans = document.getElementById("stat-total-scans");
-      if (statScans) statScans.textContent = totalScans;
-
+      // Cari Buku Terpopuler
       let maxScan = -1;
       let popularTitle = "-";
-
       books.forEach(b => {
         const count = Number(b.scan_count) || 0;
-        if (count > maxScan) {
+        if (count > maxScan && count > 0) {
           maxScan = count;
           popularTitle = b.title;
         }
@@ -189,6 +229,10 @@ async function loadDashboardStats() {
 
       const statPop = document.getElementById("stat-popular-book");
       if (statPop) statPop.textContent = popularTitle;
+
+      // Data Diagram berdasarkan Scan Bulan Ini
+      const labels = books.map(b => b.title.length > 12 ? b.title.substring(0, 12) + "..." : b.title);
+      const scanData = books.map(b => monthlyCountMap[b.id] || 0);
 
       renderChart(labels, scanData);
     } else {
@@ -199,7 +243,7 @@ async function loadDashboardStats() {
   }
 }
 
-// Render Diagram Chart.js
+// RENDER DIAGRAM CHART.JS RESPONSIIF
 function renderChart(labels, data) {
   const ctx = document.getElementById("scanChart");
   if (!ctx) return;
@@ -208,18 +252,19 @@ function renderChart(labels, data) {
     scanChartInstance.destroy();
   }
 
-  const maxVal = data.length > 0 ? Math.max(...data) : 10;
-  const suggestedMaxY = maxVal < 10 ? 10 : Math.ceil(maxVal * 1.2);
+  const maxVal = data.length > 0 ? Math.max(...data) : 5;
+  const suggestedMaxY = maxVal < 5 ? 5 : Math.ceil(maxVal * 1.25);
 
   scanChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
       labels: labels,
       datasets: [{
-        label: "Jumlah Pemindaian QR",
+        label: "Scan Bulan Ini",
         data: data,
         backgroundColor: "#6366f1",
-        borderRadius: 8,
+        hoverBackgroundColor: "#4f46e5",
+        borderRadius: 6,
         borderSkipped: false,
       }]
     },
@@ -231,7 +276,7 @@ function renderChart(labels, data) {
         tooltip: {
           callbacks: {
             label: function(context) {
-              return `Total Scan: ${context.parsed.y} kali`;
+              return `Dipindai: ${context.parsed.y} kali`;
             }
           }
         }
@@ -245,14 +290,18 @@ function renderChart(labels, data) {
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 10, weight: "bold" } }
+          ticks: { 
+            font: { size: 9, weight: "bold" },
+            maxRotation: 45,
+            minRotation: 0
+          }
         }
       }
     }
   });
 }
 
-// Load Data Buku ke Tabel
+// LOAD DATA BUKU KE TABEL ADMIN
 async function loadBooks() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -277,7 +326,7 @@ async function loadBooks() {
       <td class="p-4 flex items-center gap-3">
         <img src="${book.cover_url || 'https://via.placeholder.com/40'}" class="w-10 h-14 object-cover rounded shadow-sm">
         <div>
-          <p class="font-bold text-slate-800">${book.title}</p>
+          <p class="font-bold text-slate-800 line-clamp-1">${book.title}</p>
           <p class="text-xs text-slate-500">${book.author}</p>
         </div>
       </td>
@@ -287,8 +336,8 @@ async function loadBooks() {
         <span class="text-slate-500">${book.shelf_location || '-'}</span>
       </td>
       <td class="p-4">
-        <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-full ${book.status === 'Tersedia' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-          ${book.status || 'Tersedia'}
+        <span class="px-2.5 py-1 text-xs font-extrabold rounded-full bg-indigo-50 text-indigo-600">
+          ${book.scan_count || 0} scan
         </span>
       </td>
       <td class="p-4 text-center">
@@ -311,7 +360,7 @@ async function loadBooks() {
   if (window.lucide) lucide.createIcons();
 }
 
-// Load Ulasan Siswa ke Tabel
+// LOAD ULASAN SISWA
 async function loadReviews() {
   const tableBody = document.getElementById("admin-reviews-table");
   if (!tableBody) return;
@@ -349,7 +398,6 @@ async function loadReviews() {
   });
 }
 
-// Modal Form Tambah Buku Baru
 function openBookModal() {
   editingBookId = null;
   const modal = document.getElementById("admin-book-modal");
@@ -369,7 +417,6 @@ function closeBookModal() {
   if (form) form.reset();
 }
 
-// Modal Form Edit Buku
 function editBook(book) {
   editingBookId = book.id;
 
@@ -404,7 +451,6 @@ function editBook(book) {
   if (modal) modal.classList.remove("hidden");
 }
 
-// Submit Listener Form Tambah/Edit Buku
 document.addEventListener("DOMContentLoaded", () => {
   const bookForm = document.getElementById("book-form");
   if (bookForm) {
@@ -481,7 +527,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Modal Cetak QR Code
 function generateQr(bookId, bookTitle) {
   const qrModal = document.getElementById("qr-modal");
   const qrContainer = document.getElementById("qrcode");
@@ -510,7 +555,6 @@ function closeQrModal() {
   if (qrModal) qrModal.classList.add("hidden");
 }
 
-// Hapus Buku
 async function deleteBook(bookId) {
   if (!confirm("Apakah Anda yakin ingin menghapus buku ini?")) return;
 
@@ -523,7 +567,6 @@ async function deleteBook(bookId) {
   }
 }
 
-// Approval Ulasan Siswa
 async function toggleApproveReview(reviewId, status) {
   const { error } = await supabaseClient.from("reviews").update({ is_approved: status }).eq("id", reviewId);
   if (error) {
@@ -533,8 +576,19 @@ async function toggleApproveReview(reviewId, status) {
   }
 }
 
-// Tampilkan Pesan Error Login
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  window.location.reload();
+}
+
+document.addEventListener("click", async (e) => {
+  if (e.target && (e.target.id === "logoutBtn" || e.target.closest("#logoutBtn"))) {
+    await handleLogout();
+  }
+});
+
 function showError(msg) {
+  const loginError = document.getElementById("loginError");
   if (loginError) {
     loginError.textContent = msg;
     loginError.classList.remove("hidden");
