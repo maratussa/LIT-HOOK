@@ -60,13 +60,6 @@
     <!-- Sidebar Navigation -->
     <aside class="w-full md:w-64 bg-slate-900 text-white p-6 flex flex-col justify-between border-r border-slate-800 shrink-0">
       <div class="space-y-6">
-        <!-- TOMBOL KELUAR (POSISI PALING ATAS SEBELAH KIRI) -->
-        <div>
-          <button id="logoutBtn" class="w-full flex items-center gap-2 px-3.5 py-2.5 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs font-bold transition">
-            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Dashboard
-          </button>
-        </div>
-
         <!-- LOGO PERPUSTAKAAN -->
         <div class="flex items-center gap-3 px-1 pt-2">
           <div class="bg-indigo-600 text-white p-2 rounded-xl">
@@ -97,7 +90,7 @@
     <!-- Main Content Panel -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto space-y-6">
 
-      <!-- BANNER HEADER -->
+      <!-- BANNER HEADER DENGAN TOMBOL KELUAR DI ATAS SEBELAH KANAN -->
       <div class="bg-slate-950 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-slate-800">
         <div class="space-y-2 max-w-xl z-10">
           <span class="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold rounded-full uppercase tracking-wider">
@@ -107,6 +100,13 @@
           <p class="text-xs text-slate-400 leading-relaxed font-medium">
             Kelola data buku, stiker QR, serta pantau konversi minat baca siswa secara realtime.
           </p>
+        </div>
+
+        <!-- TOMBOL KELUAR (ATAS SEBELAH KANAN) -->
+        <div class="z-10 w-full md:w-auto flex justify-end">
+          <button id="logoutBtn" class="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Dashboard
+          </button>
         </div>
       </div>
 
@@ -212,40 +212,54 @@
         <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-black text-slate-900 tracking-tight">Koleksi Buku Aktif</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Kelola informasi buku, unggah gambar bab teaser, ekspor laporan, serta cetak stiker QR code</p>
+            <p class="text-xs text-slate-500 mt-0.5">Kelola informasi buku, cetak stiker QR, serta pantau jumlah scan secara realtime</p>
           </div>
           
           <div class="flex flex-wrap items-center gap-2.5">
             <!-- INPUT SEARCH BUKU -->
-            <div class="relative w-full sm:w-60">
+            <div class="relative w-full sm:w-56">
               <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input 
                 type="text" 
                 id="admin-search-input" 
                 oninput="filterAdminBooks()" 
-                placeholder="Cari judul / penulis / DDC..." 
+                placeholder="Cari judul / penulis..." 
                 class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-sm"
               >
             </div>
             
             <!-- TOMBOL EKSPOR EXCEL & PDF -->
-            <button onclick="exportToExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+            <button onclick="exportToExcel()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
               <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
             </button>
-            <button onclick="exportToPDF()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+            <button onclick="exportToPDF()" class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
               <i data-lucide="file-text" class="w-4 h-4"></i> PDF
             </button>
 
-            <!-- TOMBOL TAMBAH BUKU BARU -->
+            <!-- TOMBOL TAMBAH BUKU BARU & CETAK QR CODE (BERDAMPINGAN SEBELAHAN) -->
             <button onclick="openBookModal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
               <i data-lucide="plus" class="w-4 h-4"></i> Tambah Buku
             </button>
-
-            <!-- TOMBOL CETAK TERPILIH -->
             <button onclick="printSelectedQrs()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
               <i data-lucide="printer" class="w-4 h-4"></i> Cetak QR (<span id="selected-count">0</span>)
             </button>
           </div>
+        </div>
+
+        <!-- OPISIONAL KONTROL FILTER HALAMAN & JUMLAH TAMPILAN -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between gap-4 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-slate-600">Tampilkan per halaman:</span>
+            <select id="items-per-page-select" onchange="changeItemsPerPage(this.value)" class="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg font-bold text-indigo-600 focus:outline-none focus:border-indigo-600 cursor-pointer">
+              <option value="10" selected>10 Buku</option>
+              <option value="20">20 Buku</option>
+              <option value="50">50 Buku</option>
+            </select>
+          </div>
+
+          <span class="text-[11px] font-medium text-slate-400 hidden sm:inline">
+            <i data-lucide="wifi" class="w-3 h-3 inline text-emerald-500 animate-pulse"></i> Realtime Sync Aktif
+          </span>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
