@@ -12,9 +12,9 @@ let allAdminBooks = [];
 let filteredAdminBooks = [];
 let selectedBookIds = new Set(); 
 
-// Variabel Paginasi
+// Variabel Paginasi Dinamis
 let currentPage = 1;
-const itemsPerPage = 10;
+let itemsPerPage = 10; // Default 10 buku per halaman
 
 // HELPER: Upload File Gambar ke Supabase Storage
 async function uploadImageToSupabase(fileInput, bucketName = "resensi_buku") {
@@ -121,17 +121,21 @@ async function checkAdminRole(userId) {
   setupRealtimeScanUpdates();
 }
 
+// SETUP SUPABASE REALTIME UNTUK SCAN COUNT & LOG
 function setupRealtimeScanUpdates() {
   if (realtimeSubscription) return;
 
   realtimeSubscription = supabaseClient
-    .channel('public:scan_updates')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scan_logs' }, () => {
-      loadDashboardStats();
+    .channel('public:scan_updates_global')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'scan_logs' }, async () => {
+      // Refresh statistik & data buku realtime ketika ada aktivitas scan baru
+      await loadDashboardStats();
+      await loadBooks();
     })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'books' }, () => {
-      loadDashboardStats();
-      loadBooks();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'books' }, async () => {
+      // Refresh data buku realtime ketika ada pembaruan scan_count
+      await loadDashboardStats();
+      await loadBooks();
     })
     .subscribe();
 }
@@ -351,7 +355,14 @@ function filterAdminBooks() {
   renderPaginatedBooksTable();
 }
 
-// RENDER BUKU DENGAN PAGINASI (10 PER HALAMAN)
+// UBAH JUMLAH BUKU TAMPIL PER HALAMAN (10, 20, 50)
+function changeItemsPerPage(newLimit) {
+  itemsPerPage = parseInt(newLimit) || 10;
+  currentPage = 1;
+  renderPaginatedBooksTable();
+}
+
+// RENDER BUKU DENGAN PAGINASI DAN REALTIME SCAN COUNT
 function renderPaginatedBooksTable() {
   const tableBody = document.getElementById("admin-books-table");
   if (!tableBody) return;
@@ -400,8 +411,9 @@ function renderPaginatedBooksTable() {
           <span class="text-slate-500">${book.shelf_location || '-'}</span>
         </td>
         <td class="p-4">
-          <span class="px-2.5 py-1 text-xs font-extrabold rounded-full bg-indigo-50 text-indigo-600">
-            ${book.scan_count || 0} scan
+          <span class="px-2.5 py-1 text-xs font-extrabold rounded-full bg-indigo-50 text-indigo-600 flex items-center gap-1 w-fit">
+            <i data-lucide="scan" class="w-3 h-3 text-indigo-500"></i>
+            <span>${book.scan_count || 0} scan</span>
           </span>
         </td>
         <td class="p-4 text-center">
