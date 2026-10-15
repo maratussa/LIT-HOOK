@@ -118,7 +118,7 @@
         </div>
       </div>
 
-      <!-- KARTU STATISTIK RINGKASAN DATA (METRICS CARD RESPONSIVE) -->
+      <!-- KARTU STATISTIK RINGKASAN DATA -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1 -->
         <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
@@ -177,7 +177,7 @@
         </div>
       </div>
 
-      <!-- DIAGRAM BATANG ANALITIK SCAN PER BUKU (FULL RESPONSIVE) -->
+      <!-- DIAGRAM BATANG ANALITIK SCAN PER BUKU -->
       <div class="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
           <div class="flex items-center gap-2">
@@ -200,6 +200,10 @@
             <h2 class="text-xl font-black text-slate-900 tracking-tight">Katalog Buku Aktif</h2>
             <p class="text-xs text-slate-500 mt-0.5">Atur informasi buku, lokasi rak, serta buat stiker QR code</p>
           </div>
+          <!-- Tombol Cetak Masal -->
+          <button onclick="printSelectedQrs()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 w-full sm:w-auto">
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak QR Terpilih (<span id="selected-count">0</span>)
+          </button>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -207,6 +211,9 @@
             <table class="w-full text-left text-sm">
               <thead class="bg-slate-50/80 text-slate-500 border-b border-slate-200 text-[11px] font-extrabold uppercase tracking-wider">
                 <tr>
+                  <th class="p-4 w-10 text-center">
+                    <input type="checkbox" id="select-all-books" onclick="toggleSelectAllBooks(this)" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                  </th>
                   <th class="p-4">Buku</th>
                   <th class="p-4">Kategori</th>
                   <th class="p-4">DDC / Rak</th>
@@ -329,21 +336,22 @@
     </div>
   </div>
 
-  <!-- MODAL CETAK QR CODE BUKU -->
+  <!-- MODAL CETAK QR CODE BUKU (Single & Bulk) -->
   <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex justify-center items-center p-4">
-    <div class="bg-white rounded-2xl p-6 text-center max-w-sm w-full shadow-2xl border border-slate-100">
+    <div class="bg-white rounded-2xl p-6 text-center max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
       <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-3">
         <i data-lucide="qr-code" class="w-5 h-5"></i>
       </div>
-      <h3 class="text-base font-extrabold text-slate-900">QR Code Teaser</h3>
-      <p id="qr-book-title" class="text-xs font-medium text-slate-500 mb-4 mt-1 line-clamp-1"></p>
+      <h3 class="text-base font-extrabold text-slate-900">Cetak QR Code Teaser</h3>
+      <p class="text-xs font-medium text-slate-500 mb-4 mt-1">Siap untuk dicetak ke stiker atau kertas perpustakaan</p>
       
-      <div id="qrcode" class="flex justify-center mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200"></div>
+      <!-- Container Grid untuk Menampung QR Code -->
+      <div id="qrcode-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200 max-h-[60vh] overflow-y-auto"></div>
       
       <div class="flex gap-2 justify-center">
         <button onclick="closeQrModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition">Tutup</button>
         <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
-          <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak QR
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Sekarang
         </button>
       </div>
     </div>
