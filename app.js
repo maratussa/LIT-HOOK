@@ -5,6 +5,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let allBooks = [];
+let isShowingAll = false; // Flag status apakah menampilkan semua buku atau hanya 8 buku terbaru
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchPublicBooks();
@@ -32,27 +33,32 @@ async function fetchPublicBooks() {
   }
 
   allBooks = books || [];
-  renderBooks(allBooks);
+  filterBooks();
 }
 
 function renderBooks(books) {
   const container = document.getElementById("books-grid");
+  const loadMoreBtnContainer = document.getElementById("load-more-container");
   if (!container) return;
 
   container.innerHTML = "";
 
   if (books.length === 0) {
     container.innerHTML = `<p class="col-span-full text-center text-slate-400 py-12">Tidak ada buku yang cocok dengan pencarian.</p>`;
+    if (loadMoreBtnContainer) loadMoreBtnContainer.classList.add("hidden");
     return;
   }
 
-  books.forEach((book) => {
+  // Tentukan buku yang akan ditayangkan (8 buku terbaru atau seluruhnya)
+  const booksToDisplay = isShowingAll ? books : books.slice(0, 8);
+
+  booksToDisplay.forEach((book) => {
     const card = document.createElement("div");
     card.className = "bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition flex flex-col justify-between p-3.5";
 
     card.innerHTML = `
       <div>
-        <!-- Sampul Buku + Pill Badge Kategori (Gambar Pertama) -->
+        <!-- Sampul Buku + Pill Badge Kategori -->
         <div class="relative w-full h-48 rounded-xl overflow-hidden mb-3 bg-slate-100">
           <img src="${book.cover_url || 'https://via.placeholder.com/300x200?text=No+Cover'}" 
                alt="${book.title}" 
@@ -93,18 +99,41 @@ function renderBooks(books) {
     container.appendChild(card);
   });
 
+  // Tampilkan atau sembunyikan tombol "Buku Terdahulu" berdasarkan jumlah total data
+  if (loadMoreBtnContainer) {
+    if (books.length > 8 && !isShowingAll) {
+      loadMoreBtnContainer.classList.remove("hidden");
+    } else {
+      loadMoreBtnContainer.classList.add("hidden");
+    }
+  }
+
   if (window.lucide) lucide.createIcons();
 }
 
 function filterBooks() {
-  const searchValue = document.getElementById("search-input").value.toLowerCase();
-  const categoryValue = document.getElementById("category-filter").value;
+  const searchInput = document.getElementById("search-input");
+  const categoryFilter = document.getElementById("category-filter");
+
+  const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const categoryValue = categoryFilter ? categoryFilter.value : "";
+
+  // Reset ke mode 8 buku awal jika user sedang memfilter/mencari
+  if (searchValue !== "" || categoryValue !== "") {
+    isShowingAll = true; 
+  }
 
   const filtered = allBooks.filter((book) => {
-    const matchSearch = book.title.toLowerCase().includes(searchValue) || book.author.toLowerCase().includes(searchValue);
+    const matchSearch = (book.title || "").toLowerCase().includes(searchValue) || (book.author || "").toLowerCase().includes(searchValue);
     const matchCategory = categoryValue === "" || book.category === categoryValue;
     return matchSearch && matchCategory;
   });
 
   renderBooks(filtered);
+}
+
+// FUNGSI UNTUK MENAMPILKAN BUKU TERDAHULU (LOAD MORE)
+function showAllBooks() {
+  isShowingAll = true;
+  filterBooks();
 }
